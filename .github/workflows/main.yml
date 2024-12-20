@@ -1,0 +1,43 @@
+name: Deploy
+
+on:
+  push:
+    branches: ['develop']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: pandoc/latex
+
+    steps:
+      # Checkout the repository
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      # Install dependencies for mustache
+      - name: Install mustache (to update the date)
+        run: |
+          apt-get update && apt-get install -y ruby
+          gem install mustache
+
+      # Run build script
+      - name: Run build script
+        run: sh ./build.sh
+
+      # Push built files to another repository
+      - name: Deploy to another repository
+        id: push_directory
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.AUTO_ACTIONS }}
+        with:
+          source-directory: 'output' # Directory with the build output
+          destination-github-username: '630yjl' # Target GitHub username
+          destination-repository-name: 'kochokchok' # Target repository
+          user-email: ${{ secrets.EMAIL }} # Email for commit
+          commit-message: "Deployed from develop branch"
+          target-branch: main # Target branch in destination repo
+
+      # Test output
+      - name: Verify deployment directory
+        run: echo $DESTINATION_CLONED_DIRECTORY
