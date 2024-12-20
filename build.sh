@@ -1,23 +1,14 @@
 #!/bin/sh
 
-# 기존 output 및 public 디렉토리 삭제 (있을 경우)
-rm -rf output
-rm -rf public
+# 현재 디렉토리에서 필요한 작업 수행
+echo "Starting build process..."
 
-# output 디렉토리 생성
-mkdir output
-
-# 현재 디렉토리의 내용을 output 디렉토리로 복사
-echo "Copying files from current directory to output directory..."
-cp -R ./* ./output
-
-# output 내용을 public 디렉토리로 이동 (Vercel 요구사항)
-echo "Moving output directory contents to public directory..."
-mkdir public
-mv ./output/* ./public
+# 빌드 스크립트 예시 (Next.js 등 필요한 빌드 명령어 추가)
+# 예: Next.js 빌드
+npm run build
 
 # 결과 확인
-echo "Public directory contents:"
-ls -la ./public
+echo "Build completed successfully!"
+ls -la .
 
-echo "Build script completed successfully."
+echo "Script completed successfully."
