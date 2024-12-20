@@ -36,7 +36,7 @@ jobs:
           destination-repository-name: 'kochokchok' # Target repository
           user-email: ${{ secrets.EMAIL }} # Email for commit
           commit-message: "Deployed from develop branch"
-          target-branch: main # Target branch in destination repo
+          target-branch: develop # Target branch in destination repo
 
       # Test output
       - name: Verify deployment directory
