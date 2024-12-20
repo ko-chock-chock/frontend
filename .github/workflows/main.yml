@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: pandoc/latex
+    container: pandoc/latexs
 
     steps:
       # Checkout the repository
