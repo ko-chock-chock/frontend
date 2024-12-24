@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import styles from "./MainPage.module.css";
+import styles from "./MainPage.module.css"
 
 export default function MainPage() {
   useEffect(() => {
