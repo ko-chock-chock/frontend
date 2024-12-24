@@ -1,0 +1,12 @@
+.lottieLogo {
+  transform: scale(2.8); /* 1.8배 확대 */
+  width: 1250px;
+  height: 100px;
+  position: absolute;
+  top: 0;
+  left: 10px;
+}
+
+.a {
+  font-size: 10px;
+}
