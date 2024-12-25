@@ -18,6 +18,7 @@ const config: Config = {
         "nav-bg": "#FCFEF5",
         "list-line": "#E9E8E3",
 
+
         // 텍스트 컬러 시스템
         text: {
           primary: "#35351E", // main_text_color와 동일
@@ -82,6 +83,14 @@ const config: Config = {
        * - 모든 텍스트는 letter-spacing과 line-height가 정의되어 있음
        */
       fontSize: {
+        jobListPrice: [
+          "22px",
+          {
+            lineHeight: "150%",
+            fontWeight: "700",
+            letterSpacing: "-0.55px",
+          },
+        ],
         /**
          * [페이지 타이틀용 텍스트]
          * 사용처: 회원가입, 로그인, 마이페이지 등의 페이지 상단 타이틀
