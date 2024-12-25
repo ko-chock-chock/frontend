@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import styles from "./MainPage.module.css"
+import styles from "./MainPage.module.css";
 
 export default function MainPage() {
   useEffect(() => {
@@ -38,7 +38,7 @@ export default function MainPage() {
   // }, []);
 
   return (
-    <main className="bg-main_bg_color flex h-screen p-3.5 px-5 flex-col justify-center items-center gap-4">
+    <main className="flex h-screen p-3.5 px-5 flex-col justify-center items-center gap-4">
       <div className="flex h-[40rem] p-3.5 px-5 flex-col justify-center items-center gap-4 self-stretch">
         <div className="flex flex-col items-start  flex-1 self-stretch p-5 rounded-2xl bg-[#80CC66] shadow-lg">
           <span className="text-[#332400] text-[1.125rem] font-semibold font-sandoll font-normal leading-[1.6875rem] tracking-[-0.05625rem]">
