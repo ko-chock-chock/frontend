@@ -1,4 +1,5 @@
 'use client';
+import Image from "next/image";
 import React, { useState } from "react";
 
 const regions = [
@@ -59,13 +60,19 @@ const JobListWithToggle = () => {
       <div className="overflow-hidden text-gray-900 truncate font-suit text-[20px] font-bold leading-[1.5] tracking-[-0.5px]">집사 구인</div>
 
       {/* 지역 선택 드롭다운 */}
-      <div className="relative mb-4">
+      <div className="relative mb-4 flex flex-col items-end gap-[0.625rem] px-[1.25rem] self-stretch">
         <button
-          className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-200"
+          className="flex items-center gap-[0.25rem] px-[0.5rem] py-[0.25rem] rounded-[1.5rem] bg-beige"
           onClick={toggleDropdown}
         >
-          <span>{selectedRegion}</span>
-          <span>{isDropdownOpen ? "▲" : "▼"}</span>
+          <span className="text-center text-gray-800 font-suit text-[0.875rem] font-medium leading-[1.5] tracking-[-0.021875rem]">{selectedRegion}</span>
+          <Image
+            src="/icons/post_list_region_dropdown_icon_16px.svg"
+            alt="드롭다운 메뉴 토글 아이콘"
+            width={16}
+            height={16}
+          />
+          {/* <span>{isDropdownOpen ? "▲" : "▼"}</span> */}
         </button>
 
         {isDropdownOpen && (
@@ -101,36 +108,71 @@ const JobListWithToggle = () => {
         )}
       </div>
 
-      {/* 잡사 리스트 */}
-      <div className="flex flex-col items-center gap-3 w-full p-5 bg-black" >
-          <div
-            // key={index}
-            className="flex items-center w-full bg-white p-4 rounded-lg shadow-sm"
-          >
-            {/* 이미지 박스 */}
-            <div className="w-[100px] h-[100px] rounded-[12px] bg-cover bg-no-repeat bg-center bg-slate-500"></div>
+      {/* 집사 리스트 */}
+      <div>
+        <div className="flex flex-col items-center gap-3 w-full p-4 border-b-[1.5px] border-gray-200" >
+            <div
+              // key={index}
+              className="flex items-center w-full rounded-lg"
+            >
+              {/* 이미지 박스 */}
+              <div className="w-[100px] h-[100px] rounded-[12px] bg-cover bg-no-repeat bg-center bg-slate-500"></div>
 
-            {/* 텍스트 컨텐츠 */}
-            <div className="ml-4 flex-1">
-              <div className="text-lg font-medium">제목</div >
-              <div className="text-sm text-gray-500">{selectedRegion} · 1주 전</div>
-              <div className="text-lg font-bold mt-1 text-gray-700">0,000원</div>
+              {/* 텍스트 컨텐츠 */}
+              <div className="ml-4 flex-1">
+                <div className="text-gray-900 text-[1rem] font-semibold leading-[1.5] tracking-[-0.025rem]">제목</div >
+                <div className="text-gray-500 font-suit text-[0.875rem] font-medium leading-[1.5] tracking-[-0.021875rem]"
+                >{selectedRegion} · 1주 전</div>
+                <div className="text-lg font-bold mt-1 text-gray-700">0,000원</div>
 
-              {/* 상태 및 아이콘 */}
-              <div className="text-sm text-gray-500 flex items-center space-x-2 mt-1">
-                <span>홍길동</span>
-                <span>•</span>
-                <span className="flex items-center">
-                  ❤️ <span className="ml-1">5</span>
-                </span>
-                <span>•</span>
-                <span className="flex items-center">
-                  👀 <span className="ml-1">5</span>
-                </span>
+                {/* 상태 및 아이콘 */}
+                <div className="text-sm text-gray-500 flex items-center mt-1 justify-between">
+                  <div className="flex space-x-1">
+                    <div className="w-5 h-5 bg-gray-300 rounded-full flex items-center justify-center">
+                      {/* 만약 텍스트나 이미지를 넣고 싶다면 아래 코드를 사용 */}
+                      {/* <img src="path-to-image" alt="Profile" className="w-full h-full rounded-full" /> */}
+                    </div>
+                    <span>홍길동</span>
+                  </div>
+
+                  <div className="flex space-x-1">
+                    <span className="flex items-center">
+                    <Image
+                      src="/icons/post_list_view_icon_24px.svg"
+                      alt="Post List View Icon"
+                      width={24}
+                      height={24}
+                    />
+                      <span className="text-gray-700 font-suit text-[0.875rem] font-medium leading-[1.5] tracking-[-0.021875rem]">5</span>
+                    </span>
+
+                    <span className="flex items-center">
+                    <Image
+                      src="/icons/post_list_like_icon_24px.svg"
+                      alt="Post List View Icon"
+                      width={24}
+                      height={24}
+                    />
+                      <span className="text-gray-700 font-suit text-[0.875rem] font-medium leading-[1.5] tracking-[-0.021875rem]">5</span>
+                    </span>
+
+                    <span className="flex items-center">
+                    <Image
+                      src="/icons/post_list_chat_icon_24px.svg"
+                      alt="Post List View Icon"
+                      width={24}
+                      height={24}
+                    />
+                      <span className="text-gray-700 font-suit text-[0.875rem] font-medium leading-[1.5] tracking-[-0.021875rem]">5</span>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+        </div>
       </div>
+      
+      
 
       {/* 하단 고정 버튼 */}
       <button className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-full shadow-lg hover:bg-green-600 flex items-center">
