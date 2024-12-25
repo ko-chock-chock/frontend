@@ -2,11 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===============================================
+ * 루트 변수 설정
+ * - 라이트/다크 모드를 위한 기본 색상 정의
+ * =============================================== */
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
+/* 다크모드 설정 */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -14,14 +19,164 @@
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
+/* ===============================================
+ * text-wrap: balance 유틸리티
+ * - 텍스트의 줄바꿈을 더 균형있게 만들어주는 기능
+ * - 제목, 헤더 등에서 텍스트 레이아웃 개선
+ * =============================================== */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+/* ===============================================
+ * 폰트 설정
+ * - Pretendard 가변 폰트 적용
+ * - 45~920 사이의 모든 웨이트 사용 가능
+ * =============================================== */
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/PretendardVariable.woff2") format("woff2");
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap; /* 폰트 로딩 중 시스템 폰트로 대체 표시 */
+}
+
+/* ===============================================
+ * 기본 스타일
+ * =============================================== */
+@layer base {
+  body {
+    color: var(--foreground);
+    background: var(--background);
+    /* 폰트 적용 우선순위
+     * 1. Pretendard (메인 폰트)
+     * 2. -apple-system (iOS/macOS 시스템 폰트)
+     * 3. Apple SD Gothic Neo (애플 기기의 한글 시스템 폰트)
+     * 4. Roboto (안드로이드 시스템 폰트)
+     * 5. Noto Sans KR (웹 최적화된 한글 폰트)
+     * 6. sans-serif (기본 폰트)
+     */
+    font-family: "Pretendard", -apple-system, "Apple SD Gothic Neo", "Roboto",
+      "Noto Sans KR", sans-serif;
+  }
+}
+
+@layer components {
+  /* ===============================================
+   * 텍스트 스타일 시스템
+   * - 공통 속성: font-style: normal, line-height: 150%
+   * - 크기별 letter-spacing:
+   *   12px -> -0.3px
+   *   14px -> -0.35px
+   *   16px -> -0.4px
+   *   18px -> -0.45px
+   *   20px -> -0.5px
+   * =============================================== */
+
+  /* 20px Bold, -0.5px */
+  .text-title-xl {
+    @apply text-text-primary text-xl font-bold leading-[150%] tracking-[-0.5px];
+    /* 아래의 부분에 적용:
+     * - 회원가입 페이지 타이틀
+     * - 회원정보 수정 페이지 타이틀
+     * - 마이페이지 타이틀
+     * - 마이페이지 닉네임
+     * - 게시글 리스트 페이지 타이틀
+     * - 채팅 페이지 타이틀
+     * - 채팅 목록 페이지 타이틀
+     */
+  }
+
+  /* 커스텀 클래스를 className 적용 예시 
+    * 회원가입 페이지 타이틀
+    * <h1 className="text-title-xl">
+    *     회원가입
+    * </h1>
+    */
+
+  /* 커스텀 클래스를 적용하고 컬러 따로 지정해줘야할때 예시 
+    * 기본 스타일에서 색상만 다르게 하고 싶을 때
+    * <h1 className="text-title-xl text-primary">
+    *     다른 색상의 제목
+    * </h1>
+    */
+
+  /* 18px Semibold, -0.45px */
+  .text-title-lg {
+    @apply text-text-primary text-section font-semibold leading-[150%] tracking-[-0.45px];
+    /* 아래의 부분에 적용:
+     * - 마이페이지 게시글 리스트 타이틀
+     * - 모달 내용 텍스트 (font-medium)
+     */
+  }
+
+  /* 16px Bold, -0.4px */
+  .text-base-bold {
+    @apply text-primary text-base font-bold leading-[150%] tracking-[-0.4px];
+    /* 아래의 부분에 적용:
+     * - 마이페이지 게시글 구분 탭 활성화 (#1B8D5A)
+     */
+  }
+
+  /* 16px Semibold, -0.4px */
+  .text-base-semibold {
+    @apply text-text-primary text-base font-semibold leading-[150%] tracking-[-0.4px];
+    /* 아래의 부분에 적용:
+     * - 게시글 리스트 가격
+     * - 마이페이지 게시글 리스트 가격
+     * - 마이페이지 레벨 등급
+     */
+  }
+
+  /* 16px Medium, -0.4px */
+  .text-base-medium {
+    @apply text-text-primary text-base font-medium leading-[150%] tracking-[-0.4px];
+    /* 아래의 부분에 적용:
+     * - 회원가입/회원정보 수정 페이지 입력 내용
+     * - 마이페이지 레벨 라벨 (#545245)
+     * - 마이페이지 게시글 구분 탭 비활성화 (#706D5C)
+     * - 채팅 페이지 메시지 내용, 활동 안내 문구
+     */
+  }
+
+  /* 14px Bold, -0.35px */
+  .text-sm-bold {
+    @apply text-text-quinary text-sm font-bold leading-[150%] tracking-[-0.35px];
+    /* 아래의 부분에 적용:
+     * - 회원가입/회원정보 수정 페이지 인풋 라벨
+     * - 게시물 작성 페이지 인풋 라벨 (#545245)
+     * - 모달 창 제목
+     */
+  }
+
+  /* 14px Medium, -0.35px */
+  .text-sm-medium {
+    @apply text-text-tertiary text-sm font-medium leading-[150%] tracking-[-0.35px];
+    /* 아래의 부분에 적용:
+     * - 게시글 리스트 페이지 지역구, 시간
+     * - 마이페이지 게시글 리스트 지역구, 시간
+     * - 게시글 리스트 닉네임, 좋아요 숫자, 채팅 숫자 (#706D5C)
+     * - 마이페이지 게시글 리스트 닉네임, 좋아요 숫자, 채팅 숫자 (#706D5C)
+     * - 회원가입 페이지 인풋 유효성 조건 텍스트 (#706D5C)
+     */
+  }
+
+  /* 12px Medium, -0.3px */
+  .text-xs-medium {
+    @apply text-text-quinary text-xs font-medium leading-[150%] tracking-[-0.3px];
+    /* 사용:
+     * - 채팅 페이지 메시지 발송 시간
+     */
+  }
+
+  /* 플레이스홀더 공통 스타일 */
+  .text-placeholder {
+    @apply text-text-tertiary text-base font-medium leading-[150%] tracking-[-0.4px];
+    /* 아래의 부분에 적용:
+     * - 회원가입 페이지 인풋 플레이스홀더
+     * - 게시물 작성 페이지 인풋 플레이스홀더
+     */
   }
 }
