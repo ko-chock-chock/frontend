@@ -16,27 +16,6 @@ export default function MainPage() {
     };
   }, []);
 
-  // useEffect(() => {
-  //   const sell = document.querySelector("#lottie-sell") as HTMLElement;
-  //   if (sell) {
-  //     sell.style.width = "6.25rem";
-  //     sell.style.height = "6.25rem";
-  //     sell.style.transform = "scale(1.3)";
-  //   }
-  //   const walk = document.querySelector("#lottie-walk") as HTMLElement;
-  //   if (walk) {
-  //     walk.style.width = "6.25rem";
-  //     walk.style.height = "6.25rem";
-  //     walk.style.transform = "scale(1.8)";
-  //   }
-  //   const free = document.querySelector("#lottie-free") as HTMLElement;
-  //   if (free) {
-  //     free.style.width = "6.25rem";
-  //     free.style.height = "6.25rem";
-  //     free.style.transform = "scale(1.8)";
-  //   }
-  // }, []);
-
   return (
     <main className="flex h-screen p-3.5 px-5 flex-col justify-center items-center gap-4">
       <div className="flex h-[40rem] p-3.5 px-5 flex-col justify-center items-center gap-4 self-stretch">
@@ -55,10 +34,13 @@ export default function MainPage() {
             </span>
             {/* <span>기능 설명</span> */}
             <dotlottie-player
-              className={styles.lottieLogo}
-              // id="lottie-sell"
+              style={{
+                transform: "scale(1.5)",
+                position: "relative",
+                bottom: "0px",
+              }}
               src="/lottiefiles/lottiesell.json"
-              speed="0.4"
+              speed="0.3"
               loop
               autoplay
             ></dotlottie-player>
@@ -69,9 +51,14 @@ export default function MainPage() {
             </span>
             {/* <span>기능 설명</span> */}
             <dotlottie-player
+              style={{
+                transform: "scale(2)",
+                position: "relative",
+                bottom: "38px",
+              }}
               id="lottie-walk"
               src="/lottiefiles/lottiewalk.json"
-              speed="1"
+              speed="0.8"
               loop
               autoplay
             ></dotlottie-player>
@@ -83,8 +70,12 @@ export default function MainPage() {
           </span>
           {/* <span>기능 설명</span> */}
           <dotlottie-player
-            className="relative left-[50px]"
-            id="lottie-free"
+            style={{
+              transform: "scale(2)",
+              position: "relative",
+              bottom: "13px",
+              left: "10px",
+            }}
             src="/lottiefiles/lottiefree.json"
             speed="0.5"
             loop
@@ -92,7 +83,7 @@ export default function MainPage() {
           ></dotlottie-player>
         </div>
       </div>
-      <div className={styles.a}>아 왜안됨</div>
+      <div className={styles.ad}>아 왜안됨</div>
     </main>
   );
 }
