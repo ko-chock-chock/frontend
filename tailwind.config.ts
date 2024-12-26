@@ -46,6 +46,7 @@ const config: Config = {
           // - 모달 타이틀
           // - 채팅 시간
           // - 채팅 리스트 마지막 메시지
+          timerFontColor: "#664700"
         },
 
         // 에러 상태 컬러
