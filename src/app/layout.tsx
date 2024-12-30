@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 // import localFont from "next/font/local";
 import "./globals.css";
+import  NavigationWrapper  from "@/commons/navigation/NavWrapper";
 
 // const geistSans = localFont({
 //   src: "fonts/GeistVF.woff",
@@ -25,11 +26,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body
+      <body>
+        <NavigationWrapper>
+          <main>{children}</main>
+        </NavigationWrapper>
+      </body>
+
+      {/* 이전에 작성되어있던것 */}
+      {/* <body
         // className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
-      </body>
+      </body> */}
     </html>
   );
 }
