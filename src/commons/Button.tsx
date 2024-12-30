@@ -23,6 +23,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * - 폰트: 16px Bold(700)
  * - 모서리: 12px 라운드 (rounded-xl)
  * - 기본 스타일: primary 배경색(#1B8D5A), 흰색 텍스트
+ * - disabled 스타일: 배경색 #E8E7E3, 텍스트 컬러 #35351E
  * - 취소버튼 스타일: #E9E8E3 배경색, primary 텍스트
  * - 사용: 모달의 "확인", "취소" 버튼, 폼 제출 버튼
  *
@@ -50,6 +51,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * - 사용: 플로팅 버튼, CTA 버튼
  *
  * design4: 텍스트 온리 버튼
+ * - 높이: 44px 고정 (터치 영역 확보)
  * - 폰트: 13px Semi-bold(600)
  * - 폰트 컬러: #8D8974
  * - line-height: 150% (19.5px)
@@ -74,6 +76,7 @@ export default function Button({
   width = "full",
   children,
   className = "",
+  disabled,
   ...props
 }: ButtonProps) {
   const designStyles = {
@@ -82,7 +85,7 @@ export default function Button({
       h-12 px-6 py-3
       text-button-lg font-bold
       rounded-xl
-      bg-primary text-white
+      ${disabled ? "bg-[#E8E7E3] text-text-primary" : "bg-primary text-white"}
     `,
 
     design2: `
@@ -103,10 +106,11 @@ export default function Button({
     `,
 
     design4: `
-      text-center
-      text-[13px] font-semibold leading-[150%] tracking-[-0.325px]
-      text-text-quinary underline
-    `,
+    flex justify-center items-center
+    h-[44px]  
+    text-[13px] font-semibold leading-[150%] tracking-[-0.325px]
+    text-text-quinary underline
+  `,
     design5: `
     flex justify-center items-center
     h-[34px] px-4 gap-1
@@ -131,6 +135,7 @@ export default function Button({
       `
         .replace(/\s+/g, " ")
         .trim()}
+      disabled={disabled}
       {...props}
     >
       {children}
