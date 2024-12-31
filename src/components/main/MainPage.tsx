@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import styles from "./MainPage.module.css";
 
 export default function MainPage() {
   useEffect(() => {
@@ -83,7 +82,6 @@ export default function MainPage() {
           ></dotlottie-player>
         </div>
       </div>
-      <div className={styles.ad}>아 왜안됨</div>
     </main>
   );
 }
