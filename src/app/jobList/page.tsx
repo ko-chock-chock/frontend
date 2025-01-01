@@ -1,7 +1,16 @@
 'use client';
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
+
+interface RegionProps {
+  name: string;
+  subRegions: string[];
+}
+interface SubRegionClickProps {
+  subRegion: string;
+}
 const regions = [
   {
     name: "서울",
@@ -31,7 +40,8 @@ const regions = [
 const JobListPage = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // 드롭다운 열림/닫힘 상태
   const [selectedRegion, setSelectedRegion] = useState("지역 선택"); // 선택한 지역
-  const [currentSubRegions, setCurrentSubRegions] = useState([]); // 하위 구 목록 상태
+  const [currentSubRegions, setCurrentSubRegions] = useState<string[]>([]); // 상태의 타입을 명시
+  const router = useRouter();
 
   // 드롭다운 토글 핸들러
   const toggleDropdown = () => {
@@ -43,15 +53,21 @@ const JobListPage = () => {
   };
 
   // 상위 지역 선택 핸들러
-  const handleRegionClick = (region) => {
+  const handleRegionClick = (region: RegionProps) => {
     setCurrentSubRegions(region.subRegions); // 선택된 지역의 하위 구 업데이트
     setSelectedRegion(region.name); // 상위 지역 이름 설정
   };
 
   // 하위 구 선택 핸들러
-  const handleSubRegionClick = (subRegion) => {
+  const handleSubRegionClick = (subRegion: string) => {
     setSelectedRegion(`${selectedRegion.split(" ")[0]} ${subRegion}`); // 선택한 구로 리셋
     setIsDropdownOpen(false); // 드롭다운 닫기
+  };
+
+
+  // 글 쓰기 버튼 핸들러 
+  const writeButton = () => {
+    router.push('/jobList/new'); // '/new-post' 경로로 이동
   };
 
   return (
@@ -174,7 +190,9 @@ const JobListPage = () => {
       
 
       {/* 하단 고정 버튼 */}
-      <button className="fixed bottom-[8.125rem] right-5 bg-primary flex h-[3.5rem] px-[1rem] justify-center items-center gap-[0.25rem] rounded-[3rem] shadow-[0_0.25rem_1.5625rem_rgba(0,0,0,0.25)]">
+      <button 
+        onClick={writeButton}
+        className="fixed bottom-[8.125rem] right-5 bg-primary flex h-[3.5rem] px-[1rem] justify-center items-center gap-[0.25rem] rounded-[3rem] shadow-[0_0.25rem_1.5625rem_rgba(0,0,0,0.25)]">
         <div className="text-white flex gap-1 justify-center items-center">
         <Image
           src="/icons/icon-pencil-plus_icon_24px.svg"
