@@ -2,19 +2,19 @@
 import Button from '@/commons/Button';
 import Input from '@/commons/input'
 import Image from 'next/image';
-import React, { useState } from 'react'
+import React, { ChangeEvent, useState } from 'react'
 
 const JobListNew = () => {
-  const [value, setValue] = useState(""); // 상태 관리
+  const [value, setValue] = useState<string>(""); 
 
   // 숫자를 천 단위로 포맷팅하는 함수
-  const formatCurrency = (value) => {
+  const formatCurrency = (value: string): string => {
     const numberValue = parseInt(value.replace(/,/g, ""), 10) || 0;
     return numberValue.toLocaleString();
   };
 
   // 입력값 처리
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     // 포맷팅된 값으로 상태 업데이트
     setValue(formatCurrency(inputValue));
