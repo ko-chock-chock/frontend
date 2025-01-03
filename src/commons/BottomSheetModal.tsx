@@ -10,6 +10,7 @@ interface BottomSheetModalProps {
   onEdit?: () => void;
   statusText: string;
   hasBgClick?: boolean;
+  postId?: string;  // postId prop 추가
 }
 
 export default function BottomSheetModal({

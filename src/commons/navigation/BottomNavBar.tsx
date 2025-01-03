@@ -42,7 +42,7 @@ export default function BottomNavBar() {
   ];
 
   return (
-    <nav className="h-[62px] bg-nav-bg fixed bottom-0 left-0 w-screen border rounded-tr-[42px] rounded-tl-[42px] border-list-line shadow-[0px_-4px_32px_0px_rgba(0,0,0,0.15)]">
+    <nav className="z-50 h-[62px] bg-nav-bg fixed bottom-0 left-0 w-screen border rounded-tr-[42px] rounded-tl-[42px] border-list-line shadow-[0px_-4px_32px_0px_rgba(0,0,0,0.15)]">
       <div className="h-full max-w-screen-sm mx-auto px-6 py-2">
         <ul className="flex h-full justify-between items-center">
           {navItems.map((item) => {
