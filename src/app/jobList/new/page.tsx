@@ -23,14 +23,14 @@ const JobListNew = () => {
   return (
     <div className="min-h-screen flex flex-col">
       {/* 헤더 (모바일로 이동 ) */}
-      <div className="flex items-center py-[9px] ">
+      {/* <div className="flex items-center py-[9px] ">
         <button className="text-gray-500">
           ←
         </button>
         <h1 className="flex-1 text-center font-bold text-title text-text-primary">
           게시글 작성
         </h1>
-      </div>
+      </div> */}
 
       {/* 입력 필드 */}
       <div className="p-4 space-y-6 flex-1">
