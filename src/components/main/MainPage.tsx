@@ -16,8 +16,8 @@ export default function MainPage() {
   }, []);
 
   return (
-    <main className="flex p-3.5 px-5 flex-col justify-center items-center gap-4">
-      <div className="flex h-[40rem] p-3.5 px-5 flex-col justify-center items-center gap-4 self-stretch">
+    <main className="flex h-[40rem] p-3.5 px-5 flex-col justify-center items-center gap-4">
+      <div className="flex h-full p-3.5 px-5 flex-col justify-center items-center gap-4 self-stretch">
         <div className="flex flex-col items-start flex-1 self-stretch p-5 rounded-2xl bg-[#1B8D5A] shadow-lg">
           <span className="text-[#FFF] text-[1.125rem] font-semibold font-sandoll font-normal leading-[1.6875rem] tracking-[-0.05625rem]">
             어플 소개
@@ -64,6 +64,7 @@ export default function MainPage() {
             ></dotlottie-player>
           </div>
         </div>
+
         <div className="flex h-[9rem] p-5 flex-col items-start flex-shrink-0 self-stretch rounded-2xl bg-[#FEF7C1] shadow-lg">
           <span className="text-[#332400] text-[1rem] font-semibold font-sandoll font-normal leading-[1.6875rem] tracking-[-0.05625rem]">
             자유 커뮤니티
