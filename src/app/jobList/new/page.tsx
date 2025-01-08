@@ -1,92 +1,270 @@
 "use client";
+import React, { useRef } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "@/commons/Button";
 import Input from "@/commons/input";
 import Image from "next/image";
-import React, { ChangeEvent, useState } from "react";
+import RegionDropdown from "@/components/regionsInput";
+import { useRouter } from "next/navigation";
+
+// Zod schema for form validation
+const jobFormSchema = z.object({
+  title: z.string().min(1, "제목을 입력해주세요"),
+  mainRegion: z.string().min(1, "지역을 선택해주세요"),
+  subRegion: z.string().min(1, "세부 지역을 선택해주세요"),
+  price: z
+    .string()
+    .min(1, "금액을 입력해주세요")
+    .regex(/^[0-9,]+$/, "올바른 금액 형식을 입력해주세요"),
+  contents: z.string().min(1, "상세 내용을 입력해주세요"),
+  images: z.array(z.instanceof(File)).optional(),
+});
+
+type JobFormData = z.infer<typeof jobFormSchema>;
 
 const JobListNew = () => {
-  const [value, setValue] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const router = useRouter();
 
-  // 숫자를 천 단위로 포맷팅하는 함수
-  const formatCurrency = (value: string): string => {
-    const numberValue = parseInt(value.replace(/,/g, ""), 10) || 0;
-    return numberValue.toLocaleString();
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<JobFormData>({
+    resolver: zodResolver(jobFormSchema),
+    defaultValues: {
+      title: "",
+      mainRegion: "",
+      subRegion: "",
+      price: "",
+      contents: "",
+      images: [],
+    },
+  });
+
+  const images = watch("images") || [];
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setValue("images", [...images, ...newFiles]);
+    }
   };
 
-  // 입력값 처리
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    // 포맷팅된 값으로 상태 업데이트
-    setValue(formatCurrency(inputValue));
+  const handleOpenFileDialog = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const onSubmit = async (data: JobFormData) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
+      }
+
+      const formData = new FormData();
+      formData.append("title", data.title);
+      formData.append("price", data.price.replace(/,/g, ""));
+      formData.append("contents", data.contents);
+      formData.append("status", "구인중");
+      formData.append("location", `${data.mainRegion} ${data.subRegion}`);
+
+      if (data.images) {
+        data.images.forEach((image) => {
+          formData.append("files", image);
+        });
+      }
+
+      const response = await fetch(
+        `https://api.kochokchok.shop/api/v1/boards/newBoard`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message);
+      }
+
+      alert("게시물이 성공적으로 등록되었습니다.");
+      router.push("/jobList");
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "등록에 실패했습니다. 다시 시도해주세요."
+      );
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* 입력 필드 */}
-      <div className="p-4 space-y-6 flex-1">
-        {/* 제목 입력 */}
+      <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-6 flex-1">
         <div>
           <label className="block text-sm text-text-secondary mb-1">제목</label>
-          <Input
-            type="text"
-            placeholder="제목을 입력해주세요"
-            className="w-full"
+          <Controller
+            name="title"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                placeholder="제목을 입력해주세요"
+                className="w-full"
+              />
+            )}
           />
+          {errors.title && (
+            <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>
+          )}
         </div>
 
-        {/* 금액 입력 */}
+        <div>
+          <label className="block text-sm text-text-secondary mb-1">
+            지역 선택
+          </label>
+          <Controller
+            name="mainRegion"
+            control={control}
+            render={({ field: { value, onChange } }) => (
+              <Controller
+                name="subRegion"
+                control={control}
+                render={({
+                  field: { value: subValue, onChange: subOnChange },
+                }) => (
+                  <RegionDropdown
+                    selectedMainRegion={value}
+                    setSelectedMainRegion={onChange}
+                    selectedSubRegion={subValue}
+                    setSelectedSubRegion={subOnChange}
+                    buttonClassName="w-full flex px-4 py-4 items-center gap-2 self-stretch rounded-xl border focus:border-[rgba(27,141,90,0.93)] focus:outline-none"
+                  />
+                )}
+              />
+            )}
+          />
+          {(errors.mainRegion || errors.subRegion) && (
+            <p className="text-red-500 text-sm mt-1">지역을 선택해주세요</p>
+          )}
+        </div>
+
         <div>
           <label className="block text-sm text-text-secondary mb-1">금액</label>
-          <Input
-            type="text"
-            value={value}
-            placeholder="₩ 1,000"
-            className="w-full"
-            onChange={handleChange}
+          <Controller
+            name="price"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                placeholder="₩ 1,000"
+                className="w-full"
+              />
+            )}
           />
+          {errors.price && (
+            <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
+          )}
         </div>
 
-        {/* 상세 내용 입력 */}
         <div>
-          <label className="block text-sm text-text-secondary mb-1 ">
+          <label className="block text-sm text-text-secondary mb-1">
             상세 내용
           </label>
-          <textarea
-            placeholder="내용을 입력해주세요"
-            className="resize-none flex w-full h-[13rem] px-4 py-4 items-center gap-2 self-stretch rounded-xl border focus:border-[rgba(27,141,90,0.93)] focus:outline-none"
-          ></textarea>
+          <Controller
+            name="contents"
+            control={control}
+            render={({ field }) => (
+              <textarea
+                {...field}
+                placeholder="내용을 입력해주세요"
+                className="resize-none flex w-full h-[13rem] px-4 py-4 items-center gap-2 self-stretch rounded-xl border focus:border-[rgba(27,141,90,0.93)] focus:outline-none"
+              />
+            )}
+          />
+          {errors.contents && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.contents.message}
+            </p>
+          )}
         </div>
 
-        {/* 사진 첨부 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             사진 첨부
           </label>
-          <div className="w-25 h-25 flex gap-2 flex-wrap mb-[3.125rem]">
-            <Image
-              src="/images/post_new_upload_btn_img.svg"
-              alt="Post List View Icon"
-              width={100}
-              height={100}
-              className=""
-            />
-            <Image
-              src="/images/post_new_upload_btn_img.svg"
-              alt="Post List View Icon"
-              width={100}
-              height={100}
-              className=""
-            />
-          </div>
-        </div>
-      </div>
+          <div className="flex gap-4 flex-wrap">
+            {/* 사진 파일 선택부분 */}
+            <div
+              className="w-[100px] h-[100px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors"
+              onClick={handleOpenFileDialog}
+            >
+              <Image
+                src="/icons/camera.png"
+                alt="Upload Image"
+                width={40}
+                height={40}
+              />
+            </div>
 
-      {/* 등록하기 버튼 */}
-      <div className="w-full px-5 pb-[3.125rem]">
-        <Button design="design1" width="full" className="h-[3.5rem]">
-          등록하기
-        </Button>
-      </div>
+            {/* 이미지 썸네일 */}
+            {images.length > 0 &&
+              images.map((image, index) => (
+                <div key={index} className="w-[100px] h-[100px] relative group">
+                  <Image
+                    src={URL.createObjectURL(image)}
+                    alt={`uploaded-${index}`}
+                    fill
+                    className="object-cover rounded-lg"
+                  />
+                  {/* Optional: Add delete button */}
+                  <button
+                    onClick={() => {
+                      const newImages = [...images];
+                      newImages.splice(index, 1);
+                      setValue("images", newImages);
+                    }}
+                    className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </div>
+
+        <div className="w-full px-5 pb-[1rem]">
+          <Button
+            type="submit"
+            design="design1"
+            width="full"
+            className="h-[3.5rem]"
+          >
+            등록하기
+          </Button>
+        </div>
+      </form>
     </div>
   );
 };

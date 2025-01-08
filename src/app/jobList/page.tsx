@@ -2,6 +2,7 @@
 "use client";
 import RegionDropdown from "@/components/regionsInput";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect, useMemo } from "react";
 
@@ -31,7 +32,7 @@ interface ApiResponse {
 
 const JobListPage = () => {
   const router = useRouter();
-  const [boards, setBoards] = useState<Board[]>([]); // Board 타입의 배열
+  const [boards, setBoards] = useState<Board[]>([]);
 
   // 지역 선택 상태
   const [selectedMainRegion, setSelectedMainRegion] = useState<string>("");
@@ -100,6 +101,7 @@ const JobListPage = () => {
         setSelectedMainRegion={setSelectedMainRegion}
         selectedSubRegion={selectedSubRegion}
         setSelectedSubRegion={setSelectedSubRegion}
+        buttonClassName="flex items-center gap-[0.25rem] px-[0.7rem] py-[0.25rem] rounded-[1.5rem] bg-list-line"
       />
 
       {/* 집사 리스트 */}
@@ -108,6 +110,7 @@ const JobListPage = () => {
           <div
             key={board.board_id}
             className="flex flex-col items-center gap-3 w-full p-4 border-b-[1.5px] border-borderBottom"
+            onClick={() => router.push(`/jobList/${board.board_id}`)}
           >
             <div className="flex items-center w-full rounded-lg">
               {/* 이미지 박스 */}
