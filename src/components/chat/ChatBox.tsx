@@ -3,27 +3,37 @@ import Image from "next/image";
 
 export default function ChatBox() {
   return (
-    <main className="mx-8 flex flex-col h-screen">
-      <div className="flex h-[3rem] justify-between items-center items-start">
-        <Image
-          className="mr-8"
-          src="/icons/Back_icon_24px.svg" // 로컬 파일 경로
-          alt="Back Icon"
-          width={24} // 크기
-          height={24}
-        />
-        <span className=" overflow-hidden text-center text-[#26220D] text-[1.25rem] font-bold leading-[1.875rem] tracking-[-0.03125rem]">
-          홍길동
-        </span>
+    <main className="flex flex-col h-screen text-[#26220D] font-suit text-base">
+      <section className="px-8 py-2 border-t border-b border-gray-300 mb-4">
+        <div className="flex">
+          <div
+            className="w-12 h-12 mr-2 rounded-2xl bg-center bg-cover bg-no-repeat flex-shrink-0"
+            style={{
+              backgroundImage: "url('/path-to-image')", // 여기서 이미지를 적용
+              backgroundColor: "#FF0000", // 원하는 배경색 (예: 빨간색)
+            }}
+          ></div>
+          <div className="w-full">
+            <div className="flex justify-between">
+              <span className="max-w-[250px] truncate">
+                제목이 들어가는 자리 입니다입니다입니다.
+              </span>
+              <span className="font-extrabold">구인중</span>
+            </div>
+            <div>
+              <span className="font-extrabold">10,000 원</span>
+            </div>
+          </div>
+        </div>
         <Button
           design="design5" // design5 스타일은 작은 둥근 버튼 스타일로 적합
           width="fit"
-          className="text-white text-[0.875rem] font-bold leading-[1.3125rem] tracking-[-0.02188rem] bg-[#4D9933]" // 기존 스타일을 className으로 추가
+          className="mt-2 text-white text-[0.875rem] font-bold leading-[1.3125rem] tracking-[-0.02188rem] bg-[#4D9933]" // 기존 스타일을 className으로 추가
         >
-          승인
+          산책 승인 하기
         </Button>
-      </div>
-      <section className="flex w-[100%] flex-col items-start gap-6">
+      </section>
+      <section className="mx-8 flex flex-col items-start gap-6">
         {/* 상대 채팅 */}
         <div className="flex">
           <div
@@ -97,7 +107,6 @@ export default function ChatBox() {
           오후 12:56
         </span>
       </section>
-
       <footer className="h-screen flex items-end">
         <div className="mx-0 flex justify-between p-2 px-5 items-center gap-2 w-full bg-[#E9E8E3]">
           <div>
