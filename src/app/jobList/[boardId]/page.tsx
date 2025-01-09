@@ -1,16 +1,43 @@
 "use client";
 
 import Image from "next/image";
-import { useParams, usePathname } from "next/navigation";
-import { useRouter } from "next/router";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination } from "swiper/modules";
+import { Pagination } from "swiper/modules";
+
+interface Image {
+  image_url: string;
+  is_thumbnail: boolean;
+}
+
+interface User {
+  name: string;
+  profile_image: string;
+}
+
+interface BoardData {
+  board_id: number;
+  title: string;
+  contents: string;
+  price: string;
+  location: string;
+  status: string;
+  created_date: string;
+  updated_date: string;
+  images: Image[];
+  user: User;
+}
+
+interface ApiResponse {
+  message: string;
+  data: BoardData;
+}
 
 const JobDetailPage = () => {
   const param = useParams();
 
-  const [boardData, setBoardData] = useState(null);
+  const [boardData, setBoardData] = useState<ApiResponse | null>(null);
 
   useEffect(() => {
     const fetchBoards = async () => {
@@ -69,7 +96,7 @@ const JobDetailPage = () => {
             {/* 이름과 아이콘 그룹 */}
             <div className="flex justify-between items-center w-full">
               <div className="text-text-primary font-sm">
-                {boardData?.data?.user_id}
+                {boardData?.data.user.name}
               </div>
               <div className="flex space-x-1">
                 <span className="flex items-center">
@@ -111,7 +138,9 @@ const JobDetailPage = () => {
             </div>
             <p className="text-text-tertiary text-sm">
               {boardData?.data?.location} ·{" "}
-              {new Date(boardData?.data?.created_date).toLocaleDateString()}
+              {new Date(
+                boardData?.data?.created_date ?? ""
+              ).toLocaleDateString()}
             </p>
           </div>
         </div>
