@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import RegionDropdown from "@/components/regionsInput";
+import RegionDropdown from "@/commons/regionsDropdown";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,11 @@ interface Image {
   is_thumbnail: boolean;
 }
 
+interface User {
+  user_id: number;
+  name: string;
+}
+
 interface Board {
   board_id: number;
   title: string;
@@ -21,6 +26,7 @@ interface Board {
   status: string;
   images: Image[];
   created_date: string;
+  user: User;
 }
 
 interface ApiResponse {
@@ -74,7 +80,7 @@ const JobListPage = () => {
 
   const filteredBoards = useMemo(() => {
     if (!selectedMainRegion) {
-      return boards; // boards 자체가 Board[]이므로 그대로 반환
+      return boards;
     }
     return boards.filter((board) => {
       const loc = board.location || "";
@@ -114,7 +120,12 @@ const JobListPage = () => {
           >
             <div className="flex items-center w-full rounded-lg">
               {/* 이미지 박스 */}
-              <div className="w-[100px] h-[100px] rounded-[12px] bg-cover bg-no-repeat bg-center bg-gray-300"></div>
+              <div
+                className="w-[100px] h-[100px] rounded-[12px] bg-cover bg-no-repeat bg-center bg-gray-300"
+                style={{
+                  backgroundImage: `url(${board.images?.[0]?.image_url || ""})`,
+                }}
+              ></div>
 
               {/* 텍스트 컨텐츠 */}
               <div className="ml-4 flex-1">
@@ -133,7 +144,9 @@ const JobListPage = () => {
                 <div className="text-sm flex items-center mt-1 justify-between">
                   <div className="flex space-x-1">
                     <div className="w-5 h-5 bg-gray-300 rounded-full flex items-center justify-center" />
-                    <span className="text-sm text-text-quaternary">홍길동</span>
+                    <span className="text-sm text-text-quaternary">
+                      {board.user.name}
+                    </span>
                   </div>
 
                   <div className="flex space-x-1">
