@@ -90,42 +90,58 @@ const RegionDropdown: React.FC<RegionDropdownProps> = ({
   buttonClassName = "flex items-center gap-[0.25rem] px-[0.7rem] py-[0.25rem] rounded-[1.5rem] bg-list-line",
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const allSubRegions = regions
-    .filter((region) => region.subRegions)
-    .flatMap((region) => region.subRegions || []);
+  const [showMainRegions, setShowMainRegions] = useState(true);
 
   const currentSubRegions = (() => {
     if (selectedMainRegion === "전체 보기") {
-      return allSubRegions; // "전체 보기"를 선택했을 경우 모든 하위 지역을 반환
+      return [];
     }
     const found = regions.find((r) => r.name === selectedMainRegion);
     return found?.subRegions || [];
   })();
 
-  const toggleDropdown = () => {
+  const toggleDropdown = (e: React.MouseEvent) => {
+    e.preventDefault(); // 이벤트 기본 동작 방지
+    e.stopPropagation(); // 이벤트 버블링 방지
+
     if (isDropdownOpen) {
       setIsDropdownOpen(false);
     } else {
-      setSelectedMainRegion("");
-      setSelectedSubRegion("");
       setIsDropdownOpen(true);
+      setShowMainRegions(true);
     }
   };
 
-  const handleRegionClick = (regionName: string) => {
+  const handleRegionClick = (regionName: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     setSelectedMainRegion(regionName);
     setSelectedSubRegion("");
+    if (regionName === "전체 보기") {
+      setSelectedMainRegion("");
+      setSelectedSubRegion("");
+      setIsDropdownOpen(false);
+    } else {
+      setShowMainRegions(false);
+    }
   };
 
-  const handleSubRegionClick = (subRegionName: string) => {
+  const handleSubRegionClick = (subRegionName: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     setSelectedSubRegion(subRegionName);
     setIsDropdownOpen(false);
   };
 
   return (
     <div className="relative mb-4 flex flex-col items-end gap-[0.625rem] self-stretch">
-      <button className={buttonClassName} onClick={toggleDropdown}>
+      <button
+        type="button" // 명시적으로 버튼 타입 지정
+        className={buttonClassName}
+        onClick={toggleDropdown}
+      >
         <span className="text-center text-text-secondary font-suit text-[0.875rem] font-sm leading-[1.5] tracking-[-0.021875rem]">
           {selectedSubRegion || selectedMainRegion || "지역 선택"}
         </span>
@@ -139,13 +155,13 @@ const RegionDropdown: React.FC<RegionDropdownProps> = ({
 
       {isDropdownOpen && (
         <div className="absolute z-10 mt-8 bg-white border rounded-lg shadow max-h-60 overflow-y-auto">
-          {!selectedMainRegion || currentSubRegions.length === 0 ? (
+          {showMainRegions ? (
             <ul>
               {regions.map((region) => (
                 <li
                   key={region.name}
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => handleRegionClick(region.name)}
+                  onClick={(e) => handleRegionClick(region.name, e)}
                 >
                   {region.name}
                 </li>
@@ -157,7 +173,7 @@ const RegionDropdown: React.FC<RegionDropdownProps> = ({
                 <li
                   key={subRegion}
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => handleSubRegionClick(subRegion)}
+                  onClick={(e) => handleSubRegionClick(subRegion, e)}
                 >
                   {subRegion}
                 </li>
