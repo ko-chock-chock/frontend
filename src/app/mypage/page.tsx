@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useInView } from "react-intersection-observer";
-import { useJobStore } from "@/_store/jobStore";
+import { useJobStore } from "@/store/jobStore";
 import ProfileCard from "./_components/ProfileCard";
 import TabGroup from "./_components/TabGroup";
 import PostCard from "./_components/PostCard";
