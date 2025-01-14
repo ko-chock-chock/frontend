@@ -5,7 +5,7 @@ import Button from "@/commons/Button";
 import { Post } from "@/types/post";
 import { useState } from "react";
 import BottomSheetModal from "@/commons/BottomSheetModal";
-import { useJobStore } from "@/_store/jobStore";
+import { useJobStore } from "@/store/jobStore";
 
 // PostCard 컴포넌트에 전달되는 props 타입 정의
 interface PostCardProps {
