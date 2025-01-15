@@ -102,35 +102,27 @@ const RegionDropdown: React.FC<RegionDropdownProps> = ({
 
   const toggleDropdown = (e: React.MouseEvent) => {
     e.preventDefault(); // 이벤트 기본 동작 방지
-    e.stopPropagation(); // 이벤트 버블링 방지
-
-    if (isDropdownOpen) {
-      setIsDropdownOpen(false);
-    } else {
-      setIsDropdownOpen(true);
+    setIsDropdownOpen(!isDropdownOpen);
+    if (!isDropdownOpen) {
       setShowMainRegions(true);
     }
   };
 
   const handleRegionClick = (regionName: string, e: React.MouseEvent) => {
     e.preventDefault();
-    e.stopPropagation();
-
-    setSelectedMainRegion(regionName);
-    setSelectedSubRegion("");
     if (regionName === "전체 보기") {
       setSelectedMainRegion("");
       setSelectedSubRegion("");
       setIsDropdownOpen(false);
     } else {
+      setSelectedMainRegion(regionName);
+      setSelectedSubRegion("");
       setShowMainRegions(false);
     }
   };
 
   const handleSubRegionClick = (subRegionName: string, e: React.MouseEvent) => {
     e.preventDefault();
-    e.stopPropagation();
-
     setSelectedSubRegion(subRegionName);
     setIsDropdownOpen(false);
   };
@@ -138,7 +130,7 @@ const RegionDropdown: React.FC<RegionDropdownProps> = ({
   return (
     <div className="relative mb-4 flex flex-col items-end gap-[0.625rem] self-stretch">
       <button
-        type="button" // 명시적으로 버튼 타입 지정
+        type="button"
         className={buttonClassName}
         onClick={toggleDropdown}
       >
@@ -154,7 +146,7 @@ const RegionDropdown: React.FC<RegionDropdownProps> = ({
       </button>
 
       {isDropdownOpen && (
-        <div className="absolute z-10 mt-8 bg-white border rounded-lg shadow max-h-60 overflow-y-auto">
+        <div className="absolute z-10 mt-2 bg-white border rounded-lg shadow max-h-60 overflow-y-auto">
           {showMainRegions ? (
             <ul>
               {regions.map((region) => (

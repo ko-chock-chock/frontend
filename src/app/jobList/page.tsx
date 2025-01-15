@@ -1,21 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
+
 import RegionDropdown from "@/commons/regionsDropdown";
-import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect, useMemo } from "react";
-
-interface Image {
-  image_id: number;
-  image_url: string;
-  is_thumbnail: boolean;
-}
-
-interface User {
-  user_id: number;
-  name: string;
-}
+import { useInView } from "react-intersection-observer";
 
 interface Board {
   board_id: number;
@@ -24,93 +12,101 @@ interface Board {
   price: string;
   location: string;
   status: string;
-  images: Image[];
+  images: { image_url: string }[];
   created_date: string;
-  user: User;
-}
-
-interface ApiResponse {
-  message: string;
-  data: {
-    data: Board[];
-  };
+  user: { name: string };
 }
 
 const JobListPage = () => {
   const router = useRouter();
   const [boards, setBoards] = useState<Board[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // 지역 선택 상태
   const [selectedMainRegion, setSelectedMainRegion] = useState<string>("");
   const [selectedSubRegion, setSelectedSubRegion] = useState<string>("");
 
-  useEffect(() => {
-    const fetchBoards = async () => {
-      try {
-        const token = localStorage.getItem("accessToken");
-        if (!token) {
-          throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
-        }
+  // useInView 훅
+  const { ref, inView } = useInView({
+    threshold: 0.1,
+  });
 
-        const response = await fetch(
-          "https://api.kochokchok.shop/api/v1/boards",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            credentials: "include",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error: ${response.statusText}`);
-        }
-
-        const data: ApiResponse = await response.json();
-        setBoards(data.data.data); // Board[]만 상태로 저장
-      } catch (err) {
-        console.error("Failed to fetch boards:", err);
+  const fetchBoards = async (pageNumber: number) => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
       }
-    };
 
-    fetchBoards();
-  }, []);
+      const response = await fetch(
+        `https://api.kochokchok.shop/api/v1/boards?page=${pageNumber}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API 호출 실패: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      setBoards((prev) =>
+        pageNumber === 1 ? data.data.data : [...prev, ...data.data.data]
+      );
+
+      // 데이터가 10개 미만이면 더 이상 데이터가 없다고 판단
+      if (data.data.data.length < 10) {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setBoards([]);
+    setPage(1);
+    setHasMore(true);
+    fetchBoards(1); // 초기 데이터 로드
+  }, [selectedMainRegion, selectedSubRegion]);
+
+  useEffect(() => {
+    if (inView && hasMore && !isLoading) {
+      fetchBoards(page);
+      setPage((prev) => prev + 1); // 다음 페이지로 이동
+    }
+  }, [inView, hasMore, isLoading, page]);
 
   const filteredBoards = useMemo(() => {
-    if (!selectedMainRegion) {
-      return boards;
-    }
+    if (!selectedMainRegion) return boards;
     return boards.filter((board) => {
       const loc = board.location || "";
       return (
-        loc.includes(selectedMainRegion) && loc.includes(selectedSubRegion)
+        loc.includes(selectedMainRegion) &&
+        (!selectedSubRegion || loc.includes(selectedSubRegion))
       );
     });
   }, [boards, selectedMainRegion, selectedSubRegion]);
 
-  const writeButton = () => {
-    router.push("/jobList/new");
-  };
-
   return (
     <div className="p-5">
-      {/* 헤더 */}
-      <div className="p-2 overflow-hidden text-text-secondary truncate font-suit text-title leading-[1.5] tracking-[-0.5px]">
-        집사 구인
-      </div>
-
-      {/* 지역 선택 드롭다운 */}
       <RegionDropdown
         selectedMainRegion={selectedMainRegion}
         setSelectedMainRegion={setSelectedMainRegion}
         selectedSubRegion={selectedSubRegion}
         setSelectedSubRegion={setSelectedSubRegion}
-        buttonClassName="flex items-center gap-[0.25rem] px-[0.7rem] py-[0.25rem] rounded-[1.5rem] bg-list-line"
       />
 
-      {/* 집사 리스트 */}
       <div>
         {filteredBoards.map((board) => (
           <div
@@ -119,7 +115,7 @@ const JobListPage = () => {
             onClick={() => router.push(`/jobList/${board.board_id}`)}
           >
             <div className="flex items-center w-full rounded-lg">
-              {/* 이미지 박스 */}
+              {/* 이미지 */}
               <div
                 className="w-[100px] h-[100px] rounded-[12px] bg-cover bg-no-repeat bg-center bg-gray-300"
                 style={{
@@ -127,7 +123,7 @@ const JobListPage = () => {
                 }}
               ></div>
 
-              {/* 텍스트 컨텐츠 */}
+              {/* 텍스트 */}
               <div className="ml-4 flex-1">
                 <div className="text-text-primary text-section font-semibold leading-[1.5] tracking-[-0.025rem]">
                   {board.title}
@@ -139,75 +135,23 @@ const JobListPage = () => {
                 <div className="text-base-semibold mt-1 text-text-primary">
                   {Number(board.price).toLocaleString()}원
                 </div>
-
-                {/* 상태 및 아이콘 */}
-                <div className="text-sm flex items-center mt-1 justify-between">
-                  <div className="flex space-x-1">
-                    <div className="w-5 h-5 bg-gray-300 rounded-full flex items-center justify-center" />
-                    <span className="text-sm text-text-quaternary">
-                      {board.user.name}
-                    </span>
-                  </div>
-
-                  <div className="flex space-x-1">
-                    <span className="flex items-center">
-                      <Image
-                        src="/icons/post_list_view_icon_24px.svg"
-                        alt="Post List View Icon"
-                        width={24}
-                        height={24}
-                      />
-                      <span className="text-text-quaternary font-suit text-[0.875rem] text-sm leading-[1.5] tracking-[-0.021875rem]">
-                        5
-                      </span>
-                    </span>
-
-                    <span className="flex items-center">
-                      <Image
-                        src="/icons/post_list_like_icon_24px.svg"
-                        alt="Post List View Icon"
-                        width={24}
-                        height={24}
-                      />
-                      <span className="text-text-quaternary font-suit text-[0.875rem] text-sm leading-[1.5] tracking-[-0.021875rem]">
-                        5
-                      </span>
-                    </span>
-
-                    <span className="flex items-center">
-                      <Image
-                        src="/icons/post_list_chat_icon_24px.svg"
-                        alt="Post List View Icon"
-                        width={24}
-                        height={24}
-                      />
-                      <span className="text-text-quaternary font-suit text-[0.875rem] text-sm leading-[1.5] tracking-[-0.021875rem]">
-                        5
-                      </span>
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
         ))}
+
+        {/* 무한 스크롤 트리거 */}
+        <div ref={ref} className="h-4" />
       </div>
 
-      {/* 하단 고정 버튼 */}
-      <button
-        onClick={writeButton}
-        className="fixed bottom-[5.5rem] right-5 bg-primary flex h-[3.5rem] px-[1rem] justify-center items-center gap-[0.25rem] rounded-[3rem] shadow-[0_0.25rem_1.5625rem_rgba(0,0,0,0.25)]"
-      >
-        <div className="text-white flex gap-1 justify-center items-center">
-          <Image
-            src="/icons/icon-pencil-plus_icon_24px.svg"
-            alt="글쓰기 아이콘"
-            width={24}
-            height={24}
-          />
-          <span>글쓰기</span>
+      {isLoading && (
+        <div className="text-center p-4">데이터를 불러오는 중...</div>
+      )}
+      {!hasMore && !isLoading && boards.length > 0 && (
+        <div className="text-center p-4 text-gray-500">
+          더 이상 게시물이 없습니다.
         </div>
-      </button>
+      )}
     </div>
   );
 };
