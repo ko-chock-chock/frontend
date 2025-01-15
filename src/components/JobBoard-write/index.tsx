@@ -7,10 +7,36 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "@/commons/Button";
 import Input from "@/commons/input";
 import Image from "next/image";
-
 import { useParams, useRouter } from "next/navigation";
 import RegionDropdown from "@/commons/regionsDropdown";
 
+interface BoardImage {
+  image_id: number;
+  image_url: string;
+  is_thumbnail: boolean;
+}
+
+interface BoardData {
+  board_id: number;
+  title: string;
+  contents: string;
+  price: number;
+  location: string;
+  status: string;
+  created_date: string;
+  updated_date: string;
+  images: BoardImage[];
+  user: {
+    name: string;
+    profile_image: string;
+  };
+}
+interface ExistingImage {
+  image_id: number;
+  image_url: string;
+  is_thumbnail: boolean;
+}
+// 폼 스키마 수정
 const jobFormSchema = z.object({
   title: z.string().min(1, "제목을 입력해주세요"),
   mainRegion: z.string().min(1, "지역을 선택해주세요"),
@@ -20,7 +46,7 @@ const jobFormSchema = z.object({
     .min(1, "금액을 입력해주세요")
     .regex(/^[0-9,]+$/, "올바른 금액 형식을 입력해주세요"),
   contents: z.string().min(1, "상세 내용을 입력해주세요"),
-  images: z.array(z.instanceof(File)).optional(),
+  newImages: z.array(z.instanceof(File)).optional(),
 });
 
 type JobFormData = z.infer<typeof jobFormSchema>;
@@ -29,11 +55,43 @@ interface JobListNewProps {
   isEdit: boolean;
 }
 
+interface BoardImage {
+  image_id: number;
+  image_url: string;
+  is_thumbnail: boolean;
+}
+
+interface BoardData {
+  board_id: number;
+  title: string;
+  contents: string;
+  price: number;
+  location: string;
+  status: string;
+  created_date: string;
+  updated_date: string;
+  images: BoardImage[];
+  user: {
+    name: string;
+    profile_image: string;
+  };
+}
+
+// 이미지 타입 수정
+interface ExistingImage {
+  image_id: number;
+  image_url: string;
+  is_thumbnail: boolean;
+}
+
+// ... (나머지 타입 정의 유지)
+
 const JobListNew = ({ isEdit }: JobListNewProps) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
   const param = useParams();
-  const [boardData, setBoardData] = useState(null);
+  const [existingImages, setExistingImages] = useState<ExistingImage[]>([]);
+  const [boardData, setBoardData] = useState<BoardData | null>(null);
 
   const {
     control,
@@ -49,16 +107,16 @@ const JobListNew = ({ isEdit }: JobListNewProps) => {
       subRegion: "",
       price: "",
       contents: "",
-      images: [],
+      newImages: [],
     },
   });
 
-  const images = watch("images") || [];
+  const newImages = watch("newImages") || [];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
-      setValue("images", [...images, ...newFiles]);
+      setValue("newImages", [...newImages, ...newFiles]);
     }
   };
 
@@ -66,6 +124,47 @@ const JobListNew = ({ isEdit }: JobListNewProps) => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
+  };
+
+  // 기존 이미지 삭제 처리 수정
+  const handleDeleteExistingImage = async (imageId: number) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        throw new Error("토큰이 없습니다.");
+      }
+
+      const response = await fetch(
+        `https://api.kochokchok.shop/api/v1/boards/image/${imageId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("이미지 삭제에 실패했습니다.");
+      }
+
+      // 성공적으로 삭제되면 상태 업데이트
+      setExistingImages(
+        existingImages.filter((img) => img.image_id !== imageId)
+      );
+    } catch (error) {
+      alert(
+        error instanceof Error ? error.message : "이미지 삭제에 실패했습니다."
+      );
+    }
+  };
+
+  // 새 이미지 삭제 처리
+  const handleDeleteNewImage = (index: number) => {
+    const updatedImages = [...newImages];
+    updatedImages.splice(index, 1);
+    setValue("newImages", updatedImages);
   };
 
   const onSubmit = async (data: JobFormData) => {
@@ -82,8 +181,8 @@ const JobListNew = ({ isEdit }: JobListNewProps) => {
       formData.append("status", "구인중");
       formData.append("location", `${data.mainRegion} ${data.subRegion}`);
 
-      if (data.images) {
-        data.images.forEach((image) => {
+      if (data.newImages) {
+        data.newImages.forEach((image) => {
           formData.append("files", image);
         });
       }
@@ -130,8 +229,8 @@ const JobListNew = ({ isEdit }: JobListNewProps) => {
       formData.append("status", "구인중");
       formData.append("location", `${data.mainRegion} ${data.subRegion}`);
 
-      if (data.images) {
-        data.images.forEach((image) => {
+      if (data.newImages) {
+        data.newImages.forEach((image) => {
           formData.append("files", image);
         });
       }
@@ -164,7 +263,6 @@ const JobListNew = ({ isEdit }: JobListNewProps) => {
     }
   };
 
-  //수정페이지경우 데이터 받아오기
   useEffect(() => {
     const fetchEditData = async () => {
       const token = localStorage.getItem("accessToken");
@@ -189,21 +287,28 @@ const JobListNew = ({ isEdit }: JobListNewProps) => {
           throw new Error(`Error: ${response.status}`);
         }
 
-        const data = await response.json();
-        setBoardData(data);
-        console.log("수정모드데이터", data);
+        const responseData = await response.json();
+        const boardData: BoardData = responseData.data;
+        setBoardData(boardData);
 
-        setValue("title", data.data.title || "");
-        const [mainRegion, subRegion] = (data.data.location || "").split(" ");
+        // 폼 데이터 설정
+        setValue("title", boardData.title || "");
+        const [mainRegion, subRegion] = (boardData.location || "").split(" ");
         setValue("mainRegion", mainRegion || "");
         setValue("subRegion", subRegion || "");
-        setValue("price", data.data.price || "");
-        setValue("contents", data.data.contents || "");
-        const imageUrls = data.images?.map(
-          (img: { image_url: string }) => img.image_url
-        );
+        setValue("price", boardData.price?.toString() || "");
+        setValue("contents", boardData.contents || "");
 
-        setValue("images", imageUrls); // 이미지 URL 설정
+        // 기존 이미지 설정
+        if (boardData.images && Array.isArray(boardData.images)) {
+          setExistingImages(
+            boardData.images.map((img) => ({
+              image_id: img.image_id,
+              image_url: img.image_url,
+              is_thumbnail: img.is_thumbnail,
+            }))
+          );
+        }
       } catch (error) {
         console.error("Failed to fetch data:", error);
       }
@@ -212,8 +317,7 @@ const JobListNew = ({ isEdit }: JobListNewProps) => {
     if (isEdit) {
       fetchEditData();
     }
-  }, [param.boardId, isEdit]);
-
+  }, [param.boardId, isEdit, setValue]);
   return (
     <div className="min-h-screen flex flex-col">
       <form
@@ -315,7 +419,7 @@ const JobListNew = ({ isEdit }: JobListNewProps) => {
             사진 첨부
           </label>
           <div className="flex gap-4 flex-wrap">
-            {/* 사진 파일 선택부분 */}
+            {/* 사진 파일 선택 버튼 */}
             <div
               className="w-[100px] h-[100px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors"
               onClick={handleOpenFileDialog}
@@ -328,29 +432,51 @@ const JobListNew = ({ isEdit }: JobListNewProps) => {
               />
             </div>
 
-            {/* 이미지 썸네일 */}
-            {images.length > 0 &&
-              images.map((image, index) => (
-                <div key={index} className="w-[100px] h-[100px] relative group">
+            {/* 기존 이미지 썸네일 */}
+            {isEdit &&
+              existingImages.map((image) => (
+                <div
+                  key={image.image_id}
+                  className="w-[100px] h-[100px] relative group"
+                >
                   <Image
-                    src={URL.createObjectURL(image)}
-                    alt={`uploaded-${index}`}
+                    src={image.image_url}
+                    alt={`existing-image-${image.image_id}`}
                     fill
                     className="object-cover rounded-lg"
                   />
-                  {/* Optional: Add delete button */}
                   <button
-                    onClick={() => {
-                      const newImages = [...images];
-                      newImages.splice(index, 1);
-                      setValue("images", newImages);
-                    }}
+                    type="button"
+                    onClick={() => handleDeleteExistingImage(image.image_id)}
                     className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                   >
                     ×
                   </button>
                 </div>
               ))}
+
+            {/* 새로 추가된 이미지 썸네일 */}
+            {watch("newImages")?.map((image, index) => (
+              <div key={index} className="w-[100px] h-[100px] relative group">
+                <Image
+                  src={URL.createObjectURL(image)}
+                  alt={`new-image-${index}`}
+                  fill
+                  className="object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newImages = [...(watch("newImages") || [])];
+                    newImages.splice(index, 1);
+                    setValue("newImages", newImages);
+                  }}
+                  className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
           </div>
           <input
             ref={fileInputRef}
@@ -369,7 +495,7 @@ const JobListNew = ({ isEdit }: JobListNewProps) => {
             width="full"
             className="h-[3.5rem]"
           >
-            등록하기
+            {isEdit ? "수정하기" : "등록하기"}
           </Button>
         </div>
       </form>
