@@ -17,23 +17,29 @@ const KakaoMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const polylineRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
   const animationRef = useRef<number | null>(null);
 
-  // 강동구 내 도보 가능한 경로 (위도, 경도)
-  const pathCoords = [
-    { lat: 37.537776, lng: 127.140009 }, // 예시 지점
-    { lat: 37.545539, lng: 127.142906 }, // 강동구청
-    { lat: 37.5495, lng: 127.1475 }, // 강동구청 인근
-    { lat: 37.5482, lng: 127.149 }, // 예시 지점 1
-    { lat: 37.547, lng: 127.1505 }, // 예시 지점 2
-    { lat: 37.546453, lng: 127.151675 }, // 강동역
-    { lat: 37.5455, lng: 127.15 }, // 예시 지점 3
-    { lat: 37.544, lng: 127.1485 }, // 예시 지점 4
-    { lat: 37.543, lng: 127.147 }, // 예시 지점 5
-    { lat: 37.542, lng: 127.1455 }, // 예시 지점 6
-    { lat: 37.541, lng: 127.144 }, // 예시 지점 7
-    { lat: 37.537776, lng: 127.140009 }, // 예시 지점 8
-  ];
+  const pathCoords: { lat: number; lng: number }[] = [
+    { lat: 37.537776, lng: 127.140009 },
+    { lat: 37.545539, lng: 127.142906 },
+    { lat: 37.5495, lng: 127.1475 },
+    { lat: 37.5482, lng: 127.149 },
+    { lat: 37.547, lng: 127.1505 },
+    { lat: 37.546453, lng: 127.151675 },
+    { lat: 37.5455, lng: 127.15 },
+    { lat: 37.544, lng: 127.1485 },
+    { lat: 37.543, lng: 127.147 },
+    { lat: 37.542, lng: 127.1455 },
+    { lat: 37.541, lng: 127.144 },
+    { lat: 37.537776, lng: 127.140009 },
+    null, // 테스트용 null 값
+  ].filter(
+    (coord): coord is { lat: number; lng: number } =>
+      coord !== null &&
+      typeof coord.lat === "number" &&
+      typeof coord.lng === "number"
+  );
 
   useEffect(() => {
     const loadKakaoMapScript = async () => {
@@ -72,7 +78,6 @@ const KakaoMap = () => {
 
         if (!mapContainer.current) return;
 
-        // 첫 번째 좌표를 중심으로 설정
         const centerCoords = new window.kakao.maps.LatLng(
           pathCoords[0].lat,
           pathCoords[0].lng
@@ -88,49 +93,76 @@ const KakaoMap = () => {
           options
         );
 
-        // 빈 폴리라인 생성
         polylineRef.current = new window.kakao.maps.Polyline({
-          path: [], // 초기에는 빈 배열
-          strokeWeight: 5, // 두께
-          strokeColor: "#FF0000", // 선 색깔
-          strokeOpacity: 0.8, // 선 불투명도
-          strokeStyle: "solid", // 선 스타일
+          path: [],
+          strokeWeight: 3,
+          strokeColor: "#1D8B5A",
+          strokeOpacity: 0.8,
+          strokeStyle: "solid",
         });
 
         polylineRef.current.setMap(mapInstance.current);
 
-        // 애니메이션 함수
+        markerRef.current = new window.kakao.maps.Marker({
+          position: centerCoords,
+          map: mapInstance.current,
+        });
+
         const animatePolyline = () => {
           let currentIndex = 0;
+          let progress = 0;
+          let framesPerSegment = 200; // 기본 분할 개수
 
-          const addPoint = () => {
-            if (currentIndex >= pathCoords.length) {
+          const animate = () => {
+            if (currentIndex >= pathCoords.length - 1) {
               if (animationRef.current) {
-                window.clearInterval(animationRef.current);
+                window.cancelAnimationFrame(animationRef.current);
               }
-              // 마지막 지점에 마커 추가
-              new window.kakao.maps.Marker({
-                position: new window.kakao.maps.LatLng(
-                  pathCoords[pathCoords.length - 1].lat,
-                  pathCoords[pathCoords.length - 1].lng
-                ),
-                map: mapInstance.current,
-                title: "도착지점",
-              });
               return;
             }
 
-            const currentPath = pathCoords
-              .slice(0, currentIndex + 1)
-              .map(
-                (coord) => new window.kakao.maps.LatLng(coord.lat, coord.lng)
+            const start = new window.kakao.maps.LatLng(
+              pathCoords[currentIndex].lat,
+              pathCoords[currentIndex].lng
+            );
+            const end = new window.kakao.maps.LatLng(
+              pathCoords[currentIndex + 1].lat,
+              pathCoords[currentIndex + 1].lng
+            );
+
+            // 두 좌표 간 거리 계산
+            const distance = Math.sqrt(
+              Math.pow(end.getLng() - start.getLng(), 2) +
+                Math.pow(end.getLat() - start.getLat(), 2)
+            );
+
+            // 거리 기반으로 프레임 개수 조정 (거리가 크면 더 많은 프레임)
+            framesPerSegment = Math.max(200, Math.ceil(distance * 1000000));
+
+            const dx = (end.getLng() - start.getLng()) / framesPerSegment;
+            const dy = (end.getLat() - start.getLat()) / framesPerSegment;
+
+            progress += 1;
+
+            if (progress <= framesPerSegment) {
+              const newPoint = new window.kakao.maps.LatLng(
+                start.getLat() + dy * progress,
+                start.getLng() + dx * progress
               );
 
-            polylineRef.current.setPath(currentPath);
+              const currentPath = [...polylineRef.current.getPath(), newPoint];
+              polylineRef.current.setPath(currentPath);
+              markerRef.current.setPosition(newPoint);
 
-            currentIndex++;
+              animationRef.current = requestAnimationFrame(animate);
+            } else {
+              progress = 0;
+              currentIndex++;
+              animationRef.current = requestAnimationFrame(animate);
+            }
           };
-          animationRef.current = window.setInterval(addPoint, 500);
+
+          animate();
         };
 
         animatePolyline();
@@ -141,14 +173,13 @@ const KakaoMap = () => {
 
     initializeMap();
 
-    // Cleanup
     return () => {
       const script = document.getElementById(KAKAO_MAP_SCRIPT_ID);
       if (script) script.remove();
       mapInstance.current = null;
       polylineRef.current = null;
       if (animationRef.current) {
-        window.clearInterval(animationRef.current);
+        window.cancelAnimationFrame(animationRef.current);
       }
     };
   }, []);
@@ -158,8 +189,8 @@ const KakaoMap = () => {
       ref={mapContainer}
       style={{
         width: "100%",
-        height: "100vh", // 전체 화면 높이
-        minHeight: "400px", // 최소 높이 설정
+        height: "100vh",
+        minHeight: "400px",
       }}
     />
   );
