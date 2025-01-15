@@ -1,6 +1,7 @@
 "use client";
 
 import RegionDropdown from "@/commons/regionsDropdown";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect, useMemo } from "react";
 import { useInView } from "react-intersection-observer";
@@ -87,6 +88,10 @@ const JobListPage = () => {
     }
   }, [inView, hasMore, isLoading, page]);
 
+  const writeButton = () => {
+    router.push("/jobList/new");
+  };
+
   const filteredBoards = useMemo(() => {
     if (!selectedMainRegion) return boards;
     return boards.filter((board) => {
@@ -106,7 +111,6 @@ const JobListPage = () => {
         selectedSubRegion={selectedSubRegion}
         setSelectedSubRegion={setSelectedSubRegion}
       />
-
       <div>
         {filteredBoards.map((board) => (
           <div
@@ -143,7 +147,6 @@ const JobListPage = () => {
         {/* 무한 스크롤 트리거 */}
         <div ref={ref} className="h-4" />
       </div>
-
       {isLoading && (
         <div className="text-center p-4">데이터를 불러오는 중...</div>
       )}
@@ -152,6 +155,21 @@ const JobListPage = () => {
           더 이상 게시물이 없습니다.
         </div>
       )}
+      {/* 하단 고정 버튼 */}
+      <button
+        onClick={writeButton}
+        className="fixed bottom-[5.5rem] right-5 bg-primary flex h-[3.5rem] px-[1rem] justify-center items-center gap-[0.25rem] rounded-[3rem] shadow-[0_0.25rem_1.5625rem_rgba(0,0,0,0.25)]"
+      >
+        <div className="text-white flex gap-1 justify-center items-center">
+          <Image
+            src="/icons/icon-pencil-plus_icon_24px.svg"
+            alt="글쓰기 아이콘"
+            width={24}
+            height={24}
+          />
+          <span>글쓰기</span>
+        </div>
+      </button>
     </div>
   );
 };
