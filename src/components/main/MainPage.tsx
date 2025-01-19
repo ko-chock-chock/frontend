@@ -1,4 +1,6 @@
 "use client";
+
+import Link from "next/link";
 import { useEffect } from "react";
 
 export default function MainPage() {
@@ -51,23 +53,26 @@ export default function MainPage() {
               autoplay
             ></dotlottie-player>
           </div>
+
           <div className="flex-1 h-[9rem] p-5 flex-col items-start rounded-2xl bg-[#DDE1FF] shadow-lg">
-            <span className="text-[#332400] text-[1rem] font-semibold font-sandoll font-normal leading-[1.6875rem] tracking-[-0.05625rem]">
-              구인 커뮤니티
-            </span>
-            {/* <span>기능 설명</span> */}
-            <dotlottie-player
-              style={{
-                transform: "scale(2)",
-                position: "relative",
-                bottom: "38px",
-              }}
-              id="lottie-walk"
-              src="/lottiefiles/lottiewalk.json"
-              speed="0.8"
-              loop
-              autoplay
-            ></dotlottie-player>
+            <Link href="../jobList">
+              <span className="text-[#332400] text-[1rem] font-semibold font-sandoll font-normal leading-[1.6875rem] tracking-[-0.05625rem]">
+                구인 커뮤니티
+              </span>
+              {/* <span>기능 설명</span> */}
+              <dotlottie-player
+                style={{
+                  transform: "scale(2)",
+                  position: "relative",
+                  bottom: "38px",
+                }}
+                id="lottie-walk"
+                src="/lottiefiles/lottiewalk.json"
+                speed="0.8"
+                loop
+                autoplay
+              ></dotlottie-player>
+            </Link>
           </div>
         </div>
 
