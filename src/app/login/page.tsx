@@ -46,7 +46,7 @@ export default function LoginPage() {
     try {
       const tokenParts = token.split(".");
       const payload = JSON.parse(atob(tokenParts[1]));
-      return payload.user_id;
+      return payload.sub;
     } catch (error) {
       console.error("토큰 파싱 실패:", error);
       return null;
