@@ -157,7 +157,7 @@ export default function ChatBox() {
             )}
           </section>
 
-          <section className="mx-8 flex flex-col items-start gap-6 overflow-y-auto flex-1">
+          <section className="mb-[8px] mx-8 flex flex-col items-start gap-6 overflow-y-auto flex-1">
             {messages.map((message, index) => (
               <div
                 key={index}
@@ -166,7 +166,7 @@ export default function ChatBox() {
                 }`}
               >
                 {message.type === "system" ? (
-                  <div className="min-h-[120px] flex flex-col p-2 px-5 items-start gap-4 self-stretch border-l-[2.5px] border-[#72C655]">
+                  <div className="w-full min-h-[120px] flex flex-col p-2 px-5 items-start gap-4 self-stretch border-l-[2.5px] border-[#72C655]">
                     <div className="flex flex-col self-stretch text-[#26220D] font-suit text-base font-medium leading-[1.5rem] tracking-[-0.025rem]">
                       <span>{message.content?.title}</span>
                       <span>{message.content?.subtitle}</span>
@@ -175,7 +175,7 @@ export default function ChatBox() {
                       <Image
                         className="mr-1"
                         src="/icons/chat_location_icon_20px.svg"
-                        alt="Back Icon"
+                        alt="location Icon"
                         width={20}
                         height={20}
                       />
@@ -184,22 +184,35 @@ export default function ChatBox() {
                   </div>
                 ) : (
                   <>
+                    {/* 내가 보낸 메시지라면 시간은 왼쪽에 표시 */}
                     {message.sender === username && (
-                      <span className="text-sm text-[#8D8974] mr-[5px]">
-                        {message.time}
+                      <span className="flex items-end min-w-[3.8125rem] mr-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
+                        {message.time || "시간 없음"}
                       </span>
                     )}
+
+                    {/* 상대 아이콘 */}
+                    {message.sender !== username && (
+                      <div
+                        className="w-[40px] h-[40px] mr-2 rounded-3xl bg-center bg-cover bg-no-repeat flex-shrink-0"
+                        style={{
+                          backgroundColor: "#d3d3d3",
+                        }}
+                      ></div>
+                    )}
+
                     <div
                       className={`max-w-[79%] px-3 py-2 ${
                         message.sender === username
-                          ? "bg-[#E9E8E3] rounded-br-none"
-                          : "bg-[#BFE5B3] rounded-bl-none"
-                      } text-base text-[#26220D]`}
+                          ? "bg-[#E9E8E3] rounded-tl-lg rounded-tr-lg rounded-bl-lg rounded-br-none"
+                          : "bg-[#BFE5B3] rounded-tl-none rounded-tr-lg rounded-bl-lg rounded-br-lg "
+                      }text-[#26220D] text-base font-medium leading-6 tracking-[-0.025rem]`}
                     >
                       {message.text}
                     </div>
+                    {/* 상대가 보낸 메세지라면 시간은 오른쪽에 표시 */}
                     {message.sender !== username && (
-                      <span className="text-sm text-[#8D8974] ml-[5px]">
+                      <span className="flex items-end min-w-[3.8125rem] ml-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
                         {message.time}
                       </span>
                     )}
@@ -223,7 +236,7 @@ export default function ChatBox() {
               </div>
               <input
                 ref={inputRef}
-                className="w-full p-3 px-4 rounded-[2.5rem] border border-[#BBB8AB] bg-[#F4F3F1] text-[#A3A08F] text-base"
+                className="w-full flex p-3 px-4 items-center gap-2 rounded-[2.5rem] border border-[#BBB8AB] bg-[#F4F3F1] text-[#A3A08F] text-base font-medium leading-[1.5rem] tracking-[-0.025rem]"
                 placeholder="메세지를 입력해주세요."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
