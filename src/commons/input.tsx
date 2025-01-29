@@ -12,11 +12,11 @@ interface InputProps {
 }
 
 const Input: React.FC<InputProps> = ({
-  type,
-  placeholder,
+  type = "text",
+  placeholder = "",
   value,
   onChange,
-  className,
+  className = "",
   error,
   name, // props 추가
   id, // props 추가
@@ -28,7 +28,7 @@ const Input: React.FC<InputProps> = ({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className={`${className} flex px-4 py-4 items-center gap-2 self-stretch rounded-xl border focus:border-[rgba(27,141,90,0.93)] focus:outline-none`}
+        className={`${className} flex px-4 py-4 items-center gap-2 self-stretch rounded-lg border focus:border-[rgba(27,141,90,0.93)] focus:outline-none`}
         name={name} // name 속성 추가
         id={id} // id 속성 추가
       />
