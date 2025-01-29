@@ -10,47 +10,46 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // 주요 브랜드 컬러
-        primary: "#1B8D5A",
-
-        // 배경 컬러
-        background: "#FEFEFE", // main_bg_color와 동일
-        "nav-bg": "#FCFEF5",
-        "list-line": "#E9E8E3",
-
-
-        // 텍스트 컬러 시스템
+        // ✅ 텍스트 컬러 시스템
         text: {
-          primary: "#35351E", // main_text_color와 동일
-          // - 페이지 타이틀 (회원가입, 마이페이지 등)
-          // - 입력 필드 텍스트
-          // - 채팅 메시지 내용
-          // - 게시글 리스트 타이틀, 가격
-          // - 채팅 목록 닉네임
-          secondary: "#545245",
-          // - 마이페이지 레벨 라벨
-          // - 게시글 작성 페이지 인풋 라벨
-          // - 드롭다운 메뉴 텍스트
-          // - 채팅 목록 마지막 대화 시간
-          tertiary: "#A3A08F",
-          // - 게시글 리스트 지역구/시간 정보
-          // - 플레이스홀더 텍스트
-          // - 부가 정보 텍스트
-          quaternary: "#706D5C",
-          // - 회원가입 유효성 안내문구
-          // - 마이페이지 비활성화 탭
-          // - 게시글 좋아요/채팅 수
-          // - 닉네임 (리스트 내)
+          primary: "#2E2E2C", // 기본 텍스트
+          secondary: "#545245", // 서브 텍스트
+          tertiary: "#A3A08F", // 보조 텍스트
+          quaternary: "#706D5C", // 약한 강조 텍스트
           quinary: "#8D8974",
-          // - 회원가입/수정 인풋 라벨
-          // - 모달 타이틀
-          // - 채팅 시간
-          // - 채팅 리스트 마지막 메시지
-          timerFontColor: "#664700"
+          error: "#EC1909", // 에러 텍스트
         },
 
-        // 에러 상태 컬러
-        error: "#EC1909",
+        // ✅ 주요 브랜드 컬러
+        primary: "#18BD5A", // 프로젝트 대표 색상 (버튼, 주요 강조 요소)
+
+        // ✅ 배경 컬러 시스템
+        background: "#FEFEFE", // 전체 페이지 기본 배경색
+        "nav-bg": "#FDFCF8", // 네비게이션 바 배경
+        "list-line": "#E9E8E3", // 리스트 구분선 및 테두리
+
+        // ✅ 상태 컬러
+        error: "#EC1909", // 에러 메시지 및 오류 상태 색상
+
+        // ✅ 추가 배경 컬러
+        "receiver-bubble": "#BFE5B3", // 챗 상대 말풍선
+        "mypage-profile-card": "#F2F4EB", // 마이페이지 프로필 카드
+        "loginpage-bg": "#FCFEF5", // 로그인 페이지 배경
+
+        // ✅ 버튼 색상 시스템
+        button: {
+          text: {
+            primary: "#FFFFFF", // 버튼 기본 텍스트 색상
+            secondary: "#35351E", // 버튼 보조 텍스트 색상
+            tertiary: "#18BD5A", // 강조 텍스트 색상
+            muted: "#8D8974", // 버튼 내 서브 텍스트 색상
+          },
+          bg: {
+            primary: "#18BD5A", // 기본 버튼 배경
+            secondary: "#E9E8E3", // 보조 버튼 배경
+            tertiary: "#FFFFFF", // 서브 버튼 배경
+          },
+        },
       },
 
       fontFamily: {
@@ -235,3 +234,4 @@ const config: Config = {
 };
 
 export default config;
+// ;

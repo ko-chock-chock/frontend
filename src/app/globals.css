@@ -7,7 +7,7 @@
  * - 라이트/다크 모드를 위한 기본 색상 정의
  * =============================================== */
 :root {
-  --background: #FEFEFE;
+  --background: #fefefe;
   /* --foreground: #171717; */
 }
 
@@ -48,6 +48,7 @@
  * =============================================== */
 @layer base {
   body {
+    @apply px-[1.25rem]; /* 좌우 패딩 20px씩 */
     color: var(--foreground);
     background: var(--background);
     /* 폰트 적용 우선순위

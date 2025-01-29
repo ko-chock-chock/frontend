@@ -10,7 +10,7 @@ export default function ChatList() {
             className="w-12 h-12 rounded-3xl bg-center bg-cover bg-no-repeat flex-shrink-0"
             style={{
               backgroundImage: "url('/path-to-image')", // 여기서 이미지를 적용
-              backgroundColor: "#FF0000", // 원하는 배경색 (예: 빨간색)
+              backgroundColor: "#d3d3d3", // 원하는 배경색 (예: 빨간색)
             }}
           ></div>
           <div className="ml-[1rem] mr-[0.5rem]">
