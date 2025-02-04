@@ -1,7 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
-import styles from "./MainPage.module.css"
 
 export default function MainPage() {
   useEffect(() => {
@@ -16,75 +16,80 @@ export default function MainPage() {
     };
   }, []);
 
-  // useEffect(() => {
-  //   const sell = document.querySelector("#lottie-sell") as HTMLElement;
-  //   if (sell) {
-  //     sell.style.width = "6.25rem";
-  //     sell.style.height = "6.25rem";
-  //     sell.style.transform = "scale(1.3)";
-  //   }
-  //   const walk = document.querySelector("#lottie-walk") as HTMLElement;
-  //   if (walk) {
-  //     walk.style.width = "6.25rem";
-  //     walk.style.height = "6.25rem";
-  //     walk.style.transform = "scale(1.8)";
-  //   }
-  //   const free = document.querySelector("#lottie-free") as HTMLElement;
-  //   if (free) {
-  //     free.style.width = "6.25rem";
-  //     free.style.height = "6.25rem";
-  //     free.style.transform = "scale(1.8)";
-  //   }
-  // }, []);
-
   return (
-    <main className="bg-main_bg_color flex h-screen p-3.5 px-5 flex-col justify-center items-center gap-4">
-      <div className="flex h-[40rem] p-3.5 px-5 flex-col justify-center items-center gap-4 self-stretch">
-        <div className="flex flex-col items-start  flex-1 self-stretch p-5 rounded-2xl bg-[#80CC66] shadow-lg">
-          <span className="text-[#332400] text-[1.125rem] font-semibold font-sandoll font-normal leading-[1.6875rem] tracking-[-0.05625rem]">
-            어플 소개
+    <main className="flex h-[40rem] p-3.5 px-5 flex-col justify-center items-center gap-4">
+      <div className="flex h-full p-3.5 px-5 flex-col justify-center items-center gap-4 self-stretch">
+        <div
+          className="flex flex-col items-start flex-1 self-stretch p-5 rounded-2xl shadow-lg"
+          style={{
+            backgroundImage: "url('/images/mainpageImage.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <span className="text-[#332400] text-[1.3rem] font-semibold font-sandoll font-normal leading-[2rem] tracking-[-0.05625rem]">
+            세상에 모든 코촉촉이들을 위한
           </span>
-          <span className="text-[#664700] text-[0.875rem] font-medium leading-[1.3125rem] tracking-[-0.02188rem] font-suit">
-            기능 설명
+          <span className="text-[#332400] text-[1.6rem] font-semibold font-sandoll font-normal leading-[2rem] tracking-[-0.05625rem]">
+            집사들의 선택
           </span>
         </div>
+
         <div className="flex gap-4 w-full">
-          <div className="flex-1 h-[9rem] p-5 flex-col items-start rounded-2xl bg-[#C3D13F] shadow-lg">
+          <div className="flex-1 h-[9rem] p-5 flex-col items-start rounded-2xl bg-[#FDECFE] shadow-lg">
             <span className="text-[#332400] text-[1rem] font-semibold font-sandoll font-normal leading-[1.6875rem] tracking-[-0.05625rem]">
               판매 커뮤니티
             </span>
             {/* <span>기능 설명</span> */}
             <dotlottie-player
-              className={styles.lottieLogo}
-              // id="lottie-sell"
+              style={{
+                transform: "scale(1.5)",
+                position: "relative",
+                bottom: "0px",
+              }}
               src="/lottiefiles/lottiesell.json"
-              speed="0.4"
+              speed="0.3"
               loop
               autoplay
             ></dotlottie-player>
           </div>
-          <div className="flex-1 h-[9rem] p-5 flex-col items-start rounded-2xl bg-[#B0DA86] shadow-lg">
-            <span className="text-[#332400] text-[1rem] font-semibold font-sandoll font-normal leading-[1.6875rem] tracking-[-0.05625rem]">
-              구인 커뮤니티
-            </span>
-            {/* <span>기능 설명</span> */}
-            <dotlottie-player
-              id="lottie-walk"
-              src="/lottiefiles/lottiewalk.json"
-              speed="1"
-              loop
-              autoplay
-            ></dotlottie-player>
+
+          <div className="flex-1 h-[9rem] p-5 flex-col items-start rounded-2xl bg-[#DDE1FF] shadow-lg">
+            <Link href="../jobList">
+              <span className="text-[#332400] text-[1rem] font-semibold font-sandoll font-normal leading-[1.6875rem] tracking-[-0.05625rem]">
+                구인 커뮤니티
+              </span>
+              {/* <span>기능 설명</span> */}
+              <dotlottie-player
+                style={{
+                  transform: "scale(2)",
+                  position: "relative",
+                  bottom: "38px",
+                }}
+                id="lottie-walk"
+                src="/lottiefiles/lottiewalk.json"
+                speed="0.8"
+                loop
+                autoplay
+              ></dotlottie-player>
+            </Link>
           </div>
         </div>
-        <div className="flex h-[9rem] p-5 flex-col items-start flex-shrink-0 self-stretch rounded-2xl bg-[#92D7B3] shadow-lg">
+
+        <div className="flex h-[9rem] p-5 flex-col items-start flex-shrink-0 self-stretch rounded-2xl bg-[#FEF7C1] shadow-lg">
           <span className="text-[#332400] text-[1rem] font-semibold font-sandoll font-normal leading-[1.6875rem] tracking-[-0.05625rem]">
             자유 커뮤니티
           </span>
           {/* <span>기능 설명</span> */}
           <dotlottie-player
-            className="relative left-[50px]"
-            id="lottie-free"
+            style={{
+              // transform: "scale(2)", 이게 문제!
+              width: "200px", // 원하는 너비
+              height: "200px", // 원하는 높이
+              position: "relative",
+              bottom: "58px",
+              left: "70px",
+            }}
             src="/lottiefiles/lottiefree.json"
             speed="0.5"
             loop
@@ -92,7 +97,6 @@ export default function MainPage() {
           ></dotlottie-player>
         </div>
       </div>
-      <div className={styles.a}>아 왜안됨</div>
     </main>
   );
 }

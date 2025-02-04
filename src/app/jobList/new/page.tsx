@@ -1,9 +1,7 @@
-import React from 'react'
+import JobBoardWritePage from "@/components/JobBoard-new";
 
 const JobListNew = () => {
-  return (
-    <div>구인 등록페이지</div>
-  )
-}
+  return <JobBoardWritePage isEdit={false} />;
+};
 
-export default JobListNew
+export default JobListNew;
