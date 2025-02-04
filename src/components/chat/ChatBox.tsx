@@ -5,6 +5,7 @@ import { io } from "socket.io-client";
 import Image from "next/image";
 import Button from "@/commons/Button";
 import { useRouter } from "next/navigation";
+import Input from "@/commons/input";
 
 const socket = io("http://localhost:5001"); // 서버 URL에 맞게 수정
 
@@ -21,6 +22,7 @@ export default function ChatBox() {
   const [inputValue, setInputValue] = useState(""); // 입력 필드 상태
   const [isLogin, setIsLogin] = useState(false); // 로그인 상태
   const [username, setUsername] = useState(""); // 로그인한 사용자 이름
+  const [detail, setDetail] = useState(false); // 상세 버튼 (숨김 상태)
   const inputRef = useRef<HTMLInputElement>(null); // 입력 필드 DOM에 접근하기 위한 ref
   const messagesEndRef = useRef<HTMLDivElement>(null); // 채팅 메시지 목록의 끝을 참조하는 ref
   const router = useRouter(); // useRouter 훅 사용
@@ -31,6 +33,10 @@ export default function ChatBox() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); // 채팅창 스크롤을 가장 아래로 이동
+  };
+
+  const onClickDetailBtn = () => {
+    setDetail((prev) => !prev); // 현재 상태를 반대로 변경 (토글 기능)
   };
 
   // 메시지 수신 설정
@@ -145,16 +151,6 @@ export default function ChatBox() {
                 </div>
               </div>
             </div>
-            {username === "나" && (
-              <Button
-                design="design5"
-                width="fit"
-                className="mt-2 text-white text-[0.875rem] font-bold leading-[1.3125rem] tracking-[-0.02188rem] bg-[#4D9933]"
-                onClick={onClickApprove}
-              >
-                산책 승인 하기
-              </Button>
-            )}
           </section>
 
           <section className="mb-[8px] mx-8 flex flex-col items-start gap-6 overflow-y-auto flex-1">
@@ -223,35 +219,72 @@ export default function ChatBox() {
             ))}
           </section>
 
-          <footer className="flex items-end">
-            <div className="mx-0 flex justify-between p-2 px-5 items-center gap-2 w-full bg-[#E9E8E3]">
-              <div>
-                <Image
-                  className="mr-1"
-                  src="/images/chat_image_upload_btn_img_44px.svg"
-                  alt="photo Icon"
-                  width={44}
-                  height={44}
-                />
+          {/* 버튼 클릭 시 div가 나타나도록 설정 */}
+          {detail && (
+            <div className="flex w-full px-5 pb-5 pt-0 flex-col items-center rounded-t-[1.75rem] bg-[#FDFCF8]">
+              <div className="w-1/6 h-[0.25rem] rounded-[6.25rem] bg-[#BBB8AB] my-4">
+                {/* 바 */}
               </div>
-              <input
-                ref={inputRef}
-                className="w-full flex p-3 px-4 items-center gap-2 rounded-[2.5rem] border border-[#BBB8AB] bg-[#F4F3F1] text-[#A3A08F] text-base font-medium leading-[1.5rem] tracking-[-0.025rem]"
-                placeholder="메세지를 입력해주세요."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-              />
-              <div onClick={sendMessage}>
+              <div className="flex w-full gap-3 ">
+                {/* 사진 보내기 */}
                 <Image
-                  className="mr-1"
-                  src="/images/chat_send_btn_img_44px.svg"
+                  className=""
+                  src="/images/chat_image_upload_btn_img_44px.svg"
                   alt="send Icon"
                   width={44}
                   height={44}
                 />
+
+                {/* 산책 시작하기 */}
+                {username === "나" && (
+                  <Image
+                    onClick={onClickApprove}
+                    className=""
+                    src="/images/chat_walking_dog_outside_BTN_44px.svg"
+                    alt="send Icon"
+                    width={44}
+                    height={44}
+                  />
+                )}
               </div>
             </div>
-          </footer>
+          )}
+          <div className="w-full">
+            <footer className="flex w-full items-end">
+              <div className="mx-0 flex justify-between p-4 items-center gap-2 w-full bg-[#FDFCF8]">
+                <div className="min-w-[3rem] h-full" onClick={onClickDetailBtn}>
+                  <Image
+                    src={
+                      detail
+                        ? "/images/chat_collapse_BTN_44px.svg"
+                        : "/images/chat_expand_BTN_44px.svg"
+                    }
+                    alt="photo Icon"
+                    width={44}
+                    height={44}
+                  />
+                </div>
+                <div className="w-full">
+                  <Input
+                    ref={inputRef}
+                    className="w-full max-h-[3rem] flex items-center gap-2 rounded-[5rem] border border-[#BBB8AB] bg-[#F4F3F1] text-base font-medium leading-[1.5rem] tracking-[-0.025rem]"
+                    placeholder="메세지를 입력해주세요."
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                  />
+                </div>
+
+                <div className="min-w-[3rem] h-full" onClick={sendMessage}>
+                  <Image
+                    src="/images/chat_send_btn_img_44px.svg"
+                    alt="send Icon"
+                    width={44}
+                    height={44}
+                  />
+                </div>
+              </div>
+            </footer>
+          </div>
         </>
       )}
     </main>

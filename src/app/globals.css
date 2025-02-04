@@ -48,7 +48,6 @@
  * =============================================== */
 @layer base {
   body {
-    @apply px-5; /* 🔄 px-[1.25rem] -> px-5 (1.25rem) */
     color: var(--foreground);
     background: var(--background);
     /* 폰트 적용 우선순위
@@ -61,6 +60,10 @@
      */
     font-family: "Pretendard", -apple-system, "Apple SD Gothic Neo", "Roboto",
       "Noto Sans KR", sans-serif;
+  }
+  /* 페이지 전체 레이아웃을 중앙 정렬 + px-5 적용 */
+  .container {
+    @apply px-5 max-w-screen-lg mx-auto;
   }
 }
 

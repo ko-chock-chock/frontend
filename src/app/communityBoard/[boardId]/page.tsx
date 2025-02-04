@@ -1,4 +1,4 @@
-import CommunityBoardDetail from "@/components/CommunityBoard-detail";
+import CommunityBoardDetail from "@/components/communityBoard/CommunityBoard-detail";
 import React from "react";
 
 const page = () => {
