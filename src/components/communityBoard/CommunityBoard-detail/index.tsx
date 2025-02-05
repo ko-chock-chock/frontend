@@ -5,8 +5,37 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
+import Input from "@/commons/input";
+import { useRef, useState } from "react";
 
 const CommunityBoardDetail = () => {
+  const [inputValue, setInputValue] = useState(""); // 입력 필드 상태
+  const [bookmarkToggle, setBookmarkToggle] = useState(false); // 상세 버튼 (숨김 상태)
+  const inputRef = useRef<HTMLInputElement>(null); // 입력 필드 DOM에 접근하기 위한 ref
+  const onClickbookmarkToggle = () => {
+    setBookmarkToggle((prev) => !prev); // 현재 상태를 반대로 변경 (토글 기능)
+  };
+
+  // 메시지 전송 함수
+  // const sendMessage = () => {
+  //   if (!inputValue.trim()) return;
+
+  //   const message: Message = {
+  //     type: "text",
+  //     text: inputValue,
+  //     time: new Date().toLocaleTimeString([], {
+  //       hour: "2-digit",
+  //       minute: "2-digit",
+  //     }),
+  //     sender: username,
+  //   };
+
+  //   socket.emit("message", message); // 서버로 메시지 전송
+  //   setMessages((prev) => [...prev, message]); // 자신의 화면에 즉시 반영
+  //   setInputValue(""); // 입력 필드 초기화
+  //   inputRef.current?.focus();
+  // };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* 상단 이미지 */}
@@ -39,8 +68,14 @@ const CommunityBoardDetail = () => {
 
       {/* 본문 내용 */}
       <div>
-        <div className="flex items-start space-x-3 mt-6">
-          <div className="w-12 h-12 rounded-full overflow-hidden"></div>
+        <div className="flex items-start space-x-3 mt-6 px-3">
+          <div
+            className="w-12 h-12 rounded-3xl bg-center bg-cover bg-no-repeat flex-shrink-0"
+            style={{
+              backgroundImage: "url('/path-to-image')", // 여기서 이미지를 적용
+              backgroundColor: "#d3d3d3", // 원하는 배경색 (예: 빨간색)
+            }}
+          ></div>
           <div className="flex-1">
             <div className="flex justify-between items-center w-full">
               <div className="text-text-primary font-sm">사용자 이름</div>
@@ -74,14 +109,13 @@ const CommunityBoardDetail = () => {
                 </span>
               </div>
             </div>
-            <p className="text-text-tertiary text-sm">지역 정보 · 날짜</p>
+            <p className="text-text-tertiary text-sm">날짜</p>
           </div>
         </div>
-        <h1 className="text-base font-bold text-text-primary mt-6">
+        <h1 className="text-base font-bold text-text-primary mt-6 px-3">
           게시글 제목
         </h1>
-        <p className="text-jobListPrice text-text-primary mt-1">2000 원</p>
-        <p className="text-sm text-text-primary leading-6 mt-4 mb-4">
+        <p className="text-sm text-text-primary leading-6 mt-4 mb-4 px-3">
           엄청 긴 상세 설명엄청 긴 상세 설명엄청 긴 상세 설명엄청 긴 상세
           설명엄청 긴 상세 설명엄청 긴 상세 설명엄청 긴 상세 설명 엄청 긴 상세
           설명엄청 긴 상세 설명엄청 긴 상세 설명엄청 긴 상세 설명엄청 긴 상세
@@ -92,13 +126,13 @@ const CommunityBoardDetail = () => {
         </p>
       </div>
 
-      {/* 댓글 */}
+      {/* 댓글섹션 */}
       <div className="bg-nav-bg p-3">
         <h3 className=" text-text-primary text-bases mb-3">댓글 32개</h3>
 
         {/* Comments List */}
         <div className="space-y-6">
-          {/* First Comment Thread */}
+          {/* 댓글 */}
           <div className="w-full">
             <div className="flex gap-2">
               <div className="w-8 h-8 rounded-full bg-gray-200 shrink-0" />
@@ -116,7 +150,7 @@ const CommunityBoardDetail = () => {
               </div>
             </div>
 
-            {/* Replies to First Comment */}
+            {/* 대댓글 */}
             <div className="mt-3 space-y-3">
               <div className="flex gap-2 ml-10">
                 <div className="w-8 h-8 rounded-full bg-gray-200 shrink-0" />
@@ -125,9 +159,6 @@ const CommunityBoardDetail = () => {
                     <span className="font-medium text-sm">글쓴이</span>
                     <span className="text-xs text-gray-500">1시간 전</span>
                   </div>
-                  <span className="text-sm text-blue-500 mr-1">
-                    @맛집탐험가
-                  </span>
                   <p className="text-sm mt-1">
                     강남역 3번 출구에서 도보 5분 거리에 있어요! 구체적인 위치는
                     DM으로 보내드릴게요 😊
@@ -145,7 +176,6 @@ const CommunityBoardDetail = () => {
                     <span className="font-medium text-sm">맛집탐험가</span>
                     <span className="text-xs text-gray-500">30분 전</span>
                   </div>
-                  <span className="text-sm text-blue-500 mr-1">@글쓴이</span>
                   <p className="text-sm mt-1">
                     친절한 답변 감사합니다! 주말에 꼭 가보려구요~
                   </p>
@@ -157,6 +187,45 @@ const CommunityBoardDetail = () => {
             </div>
           </div>
         </div>
+      </div>
+      <div className="w-full">
+        <footer className="flex w-full items-end">
+          <div className="mx-0 flex justify-between p-4 items-center gap-2 w-full bg-[#FDFCF8]">
+            <div
+              className="min-w-[3rem] h-full"
+              onClick={onClickbookmarkToggle}
+            >
+              <Image
+                src={
+                  bookmarkToggle
+                    ? "/images/community_detailPage_unBookmark_44px.svg"
+                    : "/images/community_detailPage_bookmark_44px.svg"
+                }
+                alt="photo Icon"
+                width={44}
+                height={44}
+              />
+            </div>
+            <div className="w-full">
+              <Input
+                ref={inputRef}
+                className="w-full max-h-[3rem] flex items-center gap-2 rounded-[5rem] border border-[#BBB8AB] bg-[#F4F3F1] text-base font-medium leading-[1.5rem] tracking-[-0.025rem]"
+                placeholder="메세지를 입력해주세요."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+              />
+            </div>
+
+            <div className="min-w-[3rem] h-full">
+              <Image
+                src="/images/chat_send_btn_img_44px.svg"
+                alt="send Icon"
+                width={44}
+                height={44}
+              />
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );
