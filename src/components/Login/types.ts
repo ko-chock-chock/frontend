@@ -1,4 +1,4 @@
-// src/components/Login/types.ts
+// src/components/Login/types.ts /
 
 import { ChangeEvent } from 'react';
 
