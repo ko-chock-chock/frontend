@@ -10,23 +10,19 @@ export default function BottomNavBar() {
 
   const navItems = [
     {
-      label: "게시글",
-      path: "/jobList",
-      icon: "/icons/nav/nav_post_unselected_icon.svg",
-      activeIcon: "/icons/nav/nav_post_selected_icon.svg",
+      label: "홈",
+      path: "/",
+      icon: "/icons/nav/nav_home_unselected_icon.svg",
+      activeIcon: "/icons/nav/nav_home_selected_icon.svg",
     },
+    
     {
       label: "채팅",
       path: "/chatList",
       icon: "/icons/nav/nav_chat_unselected_icon.svg",
       activeIcon: "/icons/nav/nav_chat_selected_icon.svg",
     },
-    {
-      label: "홈",
-      path: "/",
-      icon: "/icons/nav/nav_home_unselected_icon.svg",
-      activeIcon: "/icons/nav/nav_home_selected_icon.svg",
-    },
+    
     {
       label: "찜",
       path: "/bookMark",
