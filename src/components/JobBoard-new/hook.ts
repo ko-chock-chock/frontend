@@ -139,53 +139,53 @@ export const useJobBoardNew = () => {
     }
   };
 
-  const onEdit = async (data: JobFormData) => {
-    try {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
-      }
+  // const onEdit = async (data: JobFormData) => {
+  //   try {
+  //     const token = localStorage.getItem("accessToken");
+  //     if (!token) {
+  //       throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
+  //     }
 
-      const formData = new FormData();
-      formData.append("title", data.title);
-      formData.append("price", data.price.replace(/,/g, ""));
-      formData.append("contents", data.contents);
-      formData.append("status", "구인중");
-      formData.append("location", `${data.mainRegion} ${data.subRegion}`);
+  //     const formData = new FormData();
+  //     formData.append("title", data.title);
+  //     formData.append("price", data.price.replace(/,/g, ""));
+  //     formData.append("contents", data.contents);
+  //     formData.append("status", "구인중");
+  //     formData.append("location", `${data.mainRegion} ${data.subRegion}`);
 
-      if (data.newImages) {
-        data.newImages.forEach((image) => {
-          formData.append("files", image);
-        });
-      }
+  //     if (data.newImages) {
+  //       data.newImages.forEach((image) => {
+  //         formData.append("files", image);
+  //       });
+  //     }
 
-      const response = await fetch(
-        `https://api.kochokchok.shop/api/v1/boards/${param.boardId}/edit`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-          credentials: "include",
-        }
-      );
+  //     const response = await fetch(
+  //       `https://api.kochokchok.shop/api/v1/boards/${param.boardId}/edit`,
+  //       {
+  //         method: "PATCH",
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: formData,
+  //         credentials: "include",
+  //       }
+  //     );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message);
-      }
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.message);
+  //     }
 
-      alert("게시물이 성공적으로 수정되었습니다.");
-      router.push(`/jobList/${param.boardId}`);
-    } catch (error) {
-      alert(
-        error instanceof Error
-          ? error.message
-          : "수정에 실패했습니다. 다시 시도해주세요."
-      );
-    }
-  };
+  //     alert("게시물이 성공적으로 수정되었습니다.");
+  //     router.push(`/jobList/${param.boardId}`);
+  //   } catch (error) {
+  //     alert(
+  //       error instanceof Error
+  //         ? error.message
+  //         : "수정에 실패했습니다. 다시 시도해주세요."
+  //     );
+  //   }
+  // };
 
   useEffect(() => {
     const fetchEditData = async () => {
