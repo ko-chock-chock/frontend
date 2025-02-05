@@ -1,8 +1,9 @@
-import CommunityBoardNew from "@/components/CommunityBoard-new";
-import React from "react";
+import CommunityBoard from "@/components/communityBoard/CommunityBoard-list";
 
-const page = () => {
-  return <CommunityBoardNew />;
-};
-
-export default page;
+export default function CommunityBoardPage() {
+  return (
+    <>
+      <CommunityBoard />
+    </>
+  );
+}

@@ -2,22 +2,65 @@
 
 import RegionDropdown from "@/commons/regionsDropdown";
 import Image from "next/image";
-import useJobBoardList from "./hook";
+import { useEffect, useState } from "react";
+import { Board } from "./types";
+import { useRouter } from "next/navigation";
+import { authenticatedFetch } from "@/components/auth/utils/tokenUtils";
 
 const JobBoardList = () => {
-  const {
-    selectedMainRegion,
-    setSelectedMainRegion,
-    selectedSubRegion,
-    setSelectedSubRegion,
-    filteredBoards,
-    router,
-    ref,
-    writeButton,
-    isLoading,
-    hasMore,
-    boards,
-  } = useJobBoardList();
+  const router = useRouter();
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [selectedMainRegion, setSelectedMainRegion] = useState<string>("");
+  const [selectedSubRegion, setSelectedSubRegion] = useState<string>("");
+  const [keyword] = useState<string>(""); // 검색어 상태 추가
+
+  const region = selectedSubRegion
+    ? `${selectedMainRegion} ${selectedSubRegion}`
+    : selectedMainRegion;
+
+  const fetchBoards = async (keyword: string, region: string) => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
+      }
+
+      const queryParams = new URLSearchParams();
+      if (keyword) queryParams.append("keyword", keyword);
+      if (region) queryParams.append("region", region);
+
+      const response = await authenticatedFetch(
+        `/api/trade?${queryParams.toString()}`,
+        {
+          method: "GET",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API 호출 실패: ${response.statusText}`);
+      }
+
+      const data: Board[] = await response.json();
+      setBoards(data);
+      console.log("API 데이터:", data);
+    } catch (error) {
+      console.error("fetchBoards 오류:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // setBoards([]); // 검색 조건 변경 시 기존 데이터 초기화
+    // setHasMore(true);
+    fetchBoards(keyword, region);
+  }, [keyword, region]);
+
+  const writeButton = () => {
+    router.push("/jobList/new");
+  };
 
   return (
     <div className="p-5">
@@ -28,18 +71,18 @@ const JobBoardList = () => {
         setSelectedSubRegion={setSelectedSubRegion}
       />
       <div>
-        {filteredBoards.map((board) => (
+        {boards.map((board) => (
           <div
-            key={board.board_id}
+            key={board.id}
             className="flex flex-col items-center gap-3 w-full p-4 border-b-[1.5px] border-borderBottom"
-            onClick={() => router.push(`/jobList/${board.board_id}`)}
+            onClick={() => router.push(`/jobList/${board.id}`)}
           >
             <div className="flex items-center w-full rounded-lg">
               {/* 이미지 */}
               <div
                 className="w-[100px] h-[100px] rounded-[12px] bg-cover bg-no-repeat bg-center bg-gray-300"
                 style={{
-                  backgroundImage: `url(${board.images?.[0]?.image_url || ""})`,
+                  backgroundImage: `url(${board.thumbnailImage || ""})`,
                 }}
               ></div>
 
@@ -49,8 +92,8 @@ const JobBoardList = () => {
                   {board.title}
                 </div>
                 <div className="text-text-tertiary font-suit text-sm font-medium leading-[1.5] tracking-[-0.021875rem]">
-                  {board.location} ·{" "}
-                  {new Date(board.created_date).toLocaleDateString()}
+                  {board.region} ·{" "}
+                  {new Date(board.createdAt).toLocaleDateString()}
                 </div>
                 <div className="text-base-semibold mt-1 text-text-primary">
                   {Number(board.price).toLocaleString()}원
@@ -61,12 +104,12 @@ const JobBoardList = () => {
         ))}
 
         {/* 무한 스크롤 트리거 */}
-        <div ref={ref} className="h-4" />
+        <div className="h-4" />
       </div>
       {isLoading && (
         <div className="text-center p-4">데이터를 불러오는 중...</div>
       )}
-      {!hasMore && !isLoading && boards.length > 0 && (
+      {!isLoading && boards.length > 0 && (
         <div className="text-center p-4 text-gray-500">
           더 이상 게시물이 없습니다.
         </div>
