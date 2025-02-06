@@ -71,7 +71,7 @@ export const useLogin = () => {
   const fetchUserInfo = async (userId: number, token: string): Promise<UserResponse> => {
     try {
       console.log('[Login] 사용자 정보 조회 시작:', { userId });
-      const response = await fetch(`http://13.209.11.201:8001/api/users/${userId}`, {
+      const response = await fetch(`http://3.36.40.240:8001/api/users/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -112,7 +112,7 @@ export const useLogin = () => {
     try {
       // 1. 로그인 API 호출
       console.log("[Login] 로그인 시도:", { email: data.email });
-      const loginResponse = await fetch("http://13.209.11.201:8001/api/users/login", {
+      const loginResponse = await fetch("http://3.36.40.240:8001/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
