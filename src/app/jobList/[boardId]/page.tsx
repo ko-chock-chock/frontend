@@ -1,7 +1,7 @@
-import JobBoardList from "@/components/JobBoard-list";
+import JobBoardDetail from "@/components/JobBoard-detail";
 
 const JobDetailPage = () => {
-  return <JobBoardList />;
+  return <JobBoardDetail />;
 };
 
 export default JobDetailPage;
