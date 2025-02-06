@@ -115,7 +115,7 @@ const CommunityBoardDetail = () => {
         <h1 className="text-base font-bold text-text-primary mt-6 px-3">
           게시글 제목
         </h1>
-        <p className="text-sm text-text-primary leading-6 mt-4 mb-4 px-3">
+        <p className="text-sm text-text-primary leading-6 mt-4 mb-4 px-5">
           엄청 긴 상세 설명엄청 긴 상세 설명엄청 긴 상세 설명엄청 긴 상세
           설명엄청 긴 상세 설명엄청 긴 상세 설명엄청 긴 상세 설명 엄청 긴 상세
           설명엄청 긴 상세 설명엄청 긴 상세 설명엄청 긴 상세 설명엄청 긴 상세
@@ -127,7 +127,7 @@ const CommunityBoardDetail = () => {
       </div>
 
       {/* 댓글섹션 */}
-      <div className="bg-nav-bg p-3">
+      <div className="bg-nav-bg p-5">
         <h3 className=" text-text-primary text-bases mb-3">댓글 32개</h3>
 
         {/* Comments List */}
