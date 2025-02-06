@@ -71,14 +71,14 @@ const config: Config = {
        * 텍스트 스타일 시스템
        * - Pretendard 폰트 사용
        * - 모든 텍스트는 letter-spacing과 line-height가 정의되어 있음
-       * 
+       *
        * 🔄 px to rem 변환 기준
        * fontSize: px값을 16으로 나눔 (1rem = 16px)
        * letterSpacing: px값을 16으로 나눔
-       * 예시: 
+       * 예시:
        * - 20px = 20/16 = 1.25rem
        * - -0.5px = -0.5/16 = -0.031rem
-       * 
+       *
        * fontWeight 값 기준:
        * - Regular: 400
        * - Medium: 500

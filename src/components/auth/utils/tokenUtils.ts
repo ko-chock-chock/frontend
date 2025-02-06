@@ -20,7 +20,7 @@ import { AuthResponse, AuthCheckResult } from "../types/auth";
 import { useUserStore } from "../../../commons/store/userStore";
 
 // API 설정
-const API_BASE_URL = "http://13.209.11.201:8001";
+const API_BASE_URL = "http://3.36.40.240:8001";
 const API_CONFIG = {
   AUTH: {
     SIGNUP: "/api/users/signup",
