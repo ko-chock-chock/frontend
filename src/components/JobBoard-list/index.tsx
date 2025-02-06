@@ -1,5 +1,3 @@
-"use client";
-
 import RegionDropdown from "@/commons/regionsDropdown";
 import Image from "next/image";
 import useJobBoardList from "./hook";
