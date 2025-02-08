@@ -188,6 +188,7 @@ const CommunityBoardDetail = () => {
           </div>
         </div>
       </div>
+
       <div className="w-full">
         <footer className="flex w-full items-end">
           <div className="mx-0 flex justify-between p-4 items-center gap-2 w-full bg-[#FDFCF8]">

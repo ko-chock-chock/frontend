@@ -2,7 +2,6 @@
 
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-
 import Image from "next/image";
 import Button from "@/commons/Button";
 import Input from "@/commons/input";
@@ -22,40 +21,37 @@ const CommunityBoardNew = () => {
   } = useForm<{
     title: string;
     contents: string;
-    images: File[]; // ✅ images의 타입을 File[]로 명확하게 설정
+    images: File[];
   }>({
     resolver: zodResolver(communityFormSchema),
     defaultValues: {
       title: "",
       contents: "",
-      images: [], // ✅ 빈 배열을 File[] 타입으로 초기화
+      images: [],
     },
   });
 
-  const images = watch("images") || []; // 기존 이미지가 없을 경우 안전 처리
-
-  // ✅ 이미지 미리보기를 위한 상태 추가
+  const images = watch("images") || [];
   const [previewImages, setPreviewImages] = useState<string[]>([]);
 
+  // ✅ 파일 업로드 시 이미지 추가
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles: File[] = Array.from(e.target.files);
-
-      // 새로운 파일을 추가할 때 기존 파일 유지
       setValue("images", [...(images || []), ...newFiles]);
 
-      // 새 이미지 미리보기를 기존 미리보기와 합쳐서 저장
       const previewURLs = newFiles.map((file) => URL.createObjectURL(file));
       setPreviewImages([...previewImages, ...previewURLs]);
     }
   };
-  // 이미지 미리보기에서 지울때
+
+  // ✅ 이미지 미리보기에서 삭제 기능
   const removeImage = (index: number) => {
-    setPreviewImages((prev) => prev.filter((_, i) => i !== index)); // 미리보기 삭제
+    setPreviewImages((prev) => prev.filter((_, i) => i !== index));
     setValue(
       "images",
       images.filter((_, i) => i !== index)
-    ); // RHF의 상태에서도 삭제
+    );
   };
 
   const appnedImg = () => {
@@ -64,32 +60,71 @@ const CommunityBoardNew = () => {
     }
   };
 
+  // ✅ 토큰 가져오기 함수
+  const getAccessToken = (): string | null => {
+    const tokenStorageStr = localStorage.getItem("token-storage");
+    if (!tokenStorageStr) return null;
+    const tokenData = JSON.parse(tokenStorageStr);
+    return tokenData?.accessToken || null;
+  };
+
+  // ✅ 이미지 업로드 함수
   const uploadImages = async (files: File[]) => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      alert("로그인이 필요합니다.");
-      return [];
-    }
-
-    const formData = new FormData();
-    Array.from(files).forEach((file) => formData.append("files", file));
-
     try {
-      const response = await fetch("/api/uploads/multiple", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`, // 인증 헤더 추가
-        },
-        body: formData,
-      });
+      console.log("📤 이미지 업로드 시작...");
+
+      const token = getAccessToken();
+      if (!token) throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
+
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+
+      console.log("📸 전송할 이미지 파일:", formData.getAll("files"));
+
+      const response = await fetch(
+        "http://3.36.40.240:8001/api/uploads/multiple",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      console.log("✅ 이미지 업로드 완료! 응답 상태 코드:", response.status);
 
       if (!response.ok) throw new Error("파일 업로드 실패");
 
-      const data = await response.json();
-      return data.urls; // 업로드된 이미지 URL 배열 반환
+      const responseText = await response.text();
+      console.log("📩 서버 응답 원본:", responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log("📩 서버 응답 JSON:", data);
+      } catch (jsonError) {
+        console.error("❌ JSON 파싱 오류:", jsonError);
+        throw new Error("서버 응답이 JSON 형식이 아닙니다.");
+      }
+
+      // 🔍 응답이 예상과 같은지 확인
+      if (!data || !Array.isArray(data)) {
+        console.error("❌ 서버 응답 데이터가 예상과 다름:", data);
+        throw new Error("서버에서 올바른 이미지 URL을 반환하지 않았습니다.");
+      }
+
+      console.log("✅ 최종 반환 이미지 URL 목록:", data);
+      return data; // ✅ URL 배열 반환
     } catch (error) {
       console.error("❌ 이미지 업로드 실패:", error);
-      alert("이미지 업로드에 실패했습니다.");
+
+      if (error instanceof Error) {
+        alert("이미지 업로드에 실패했습니다. 오류 메시지: " + error.message);
+      } else {
+        alert("이미지 업로드에 실패했습니다. 알 수 없는 오류가 발생했습니다.");
+      }
+
       return [];
     }
   };
@@ -99,26 +134,29 @@ const CommunityBoardNew = () => {
     title: string;
     contents: string;
   }) => {
+    console.log("🔵 onSubmit 함수 실행됨", data);
+
     try {
-      const token = localStorage.getItem("accessToken"); // 인증 토큰 가져오기
+      const token = getAccessToken();
+      console.log("🟢 토큰 확인:", token);
       if (!token) throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
 
-      // 1️⃣ 사용자가 업로드한 파일을 먼저 서버에 전송하고 URL을 받아옴
       let imageUrls: string[] = [];
       if (data.images.length > 0) {
-        const files: File[] = Array.from(data.images); // ✅ FileList → File[] 변환
-        imageUrls = await uploadImages(files);
+        imageUrls = (await uploadImages(data.images)) || [];
       }
 
-      // 2️⃣ 게시글 등록 API 호출
+      console.log("📸 업로드된 이미지 URLs:", imageUrls);
+
       const payload = {
         title: data.title,
         contents: data.contents,
-        images: imageUrls, // 업로드된 이미지 URL 배열을 포함
+        images: imageUrls.length > 0 ? imageUrls : [], // ✅ 빈 배열이면 빈값 유지
       };
 
-      const response = await fetch("/api/community", {
-        // 수정해야함.
+      console.log("📨 전송할 데이터:", payload);
+
+      const response = await fetch("http://3.36.40.240:8001/api/community", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -127,21 +165,45 @@ const CommunityBoardNew = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) throw new Error("게시글 등록 실패");
+      console.log("✅ 서버 응답 수신 완료!");
+      console.log("서버 응답 상태 코드:", response.status);
+      console.log("서버 응답 헤더:", response.headers.get("content-type"));
 
-      console.log("✅ 성공적으로 등록됨:", await response.json());
-      alert("게시글이 등록되었습니다!");
+      const responseText = await response.text();
+      console.log("서버 응답 원본:", responseText);
+
+      let responseData;
+      try {
+        responseData = responseText.startsWith("{")
+          ? JSON.parse(responseText)
+          : { message: responseText };
+        console.log("서버 응답 JSON:", responseData);
+      } catch (jsonError) {
+        console.error("❌ JSON 변환 실패:", jsonError);
+        throw new Error("서버 응답이 JSON 형식이 아닙니다.");
+      }
+
+      if (!response.ok) {
+        throw new Error(responseData.message || "게시글 등록 실패");
+      }
+
+      console.log("✅ 성공적으로 등록됨:", responseData);
+      alert(responseData.message || "게시글이 등록되었습니다!");
       router.push("/communityBoard");
     } catch (error) {
-      console.error("❌ 게시글 등록 실패:", error);
-      alert("게시글 등록에 실패했습니다.");
+      if (error instanceof Error) {
+        console.error("❌ 게시글 등록 실패:", error.message);
+        alert("게시글 등록에 실패했습니다. 오류 메시지: " + error.message);
+      } else {
+        console.error("❌ 게시글 등록 실패: 알 수 없는 오류", error);
+        alert("게시글 등록에 실패했습니다. 알 수 없는 오류 발생");
+      }
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-6 flex-1">
-        {/* 제목 입력 */}
         <div>
           <label className="block text-sm text-text-primary mb-1">제목</label>
           <Input
@@ -155,7 +217,6 @@ const CommunityBoardNew = () => {
           )}
         </div>
 
-        {/* 상세 내용 입력 */}
         <div>
           <label className="block text-sm text-text-primary mb-1">
             상세 내용
@@ -170,7 +231,6 @@ const CommunityBoardNew = () => {
           )}
         </div>
 
-        {/* 파일 업로드 input (숨김) */}
         <input
           ref={fileInputRef}
           type="file"
@@ -180,14 +240,12 @@ const CommunityBoardNew = () => {
           className="hidden"
         />
 
-        {/* 이미지 업로드 UI */}
         <div>
           <label className="block text-sm font-medium text-text-primary mb-2">
             사진 첨부
           </label>
 
           <div className="flex gap-4 flex-wrap">
-            {/* 사진 파일 열기 */}
             <div
               className="w-[100px] h-[100px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors"
               onClick={appnedImg}
@@ -200,7 +258,6 @@ const CommunityBoardNew = () => {
               />
             </div>
 
-            {/* ✅ 이미지 미리보기 추가 */}
             {previewImages.map((imgSrc, index) => (
               <div key={index} className="w-[100px] h-[100px] relative group">
                 <Image
@@ -221,7 +278,6 @@ const CommunityBoardNew = () => {
           </div>
         </div>
 
-        {/* 등록 버튼 */}
         <div className="w-full">
           <Button
             type="submit"
