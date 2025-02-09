@@ -2,7 +2,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-
+import { authenticatedFetch } from "../auth/utils/tokenUtils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams, useRouter } from "next/navigation";
 import { BoardData, ExistingImage, JobFormData } from "./types";
@@ -37,10 +37,11 @@ export const useJobBoardNew = () => {
 
   const newImages = watch("newImages") || [];
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setValue("newImages", [...newImages, ...newFiles]);
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const fileArray = Array.from(files);
+      setValue("newImages", fileArray); // react-hook-form의 setValue 사용
     }
   };
 
@@ -91,53 +92,45 @@ export const useJobBoardNew = () => {
     setValue("newImages", updatedImages);
   };
 
-  const onSubmit = async (data: JobFormData) => {
-    try {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
-      }
+  // const onSubmit = async (data: JobFormData) => {
+  //   try {
+  //     const token = localStorage.getItem("accessToken");
+  //     if (!token) {
+  //       throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
+  //     }
+  //     const formData = new FormData();
+  //     formData.append("title", data.title);
+  //     formData.append("price", data.price.replace(/,/g, ""));
+  //     formData.append("contents", data.contents);
+  //     formData.append("status", "구인중");
+  //     formData.append("location", `${data.mainRegion} ${data.subRegion}`);
 
-      const formData = new FormData();
-      formData.append("title", data.title);
-      formData.append("price", data.price.replace(/,/g, ""));
-      formData.append("contents", data.contents);
-      formData.append("status", "구인중");
-      formData.append("location", `${data.mainRegion} ${data.subRegion}`);
+  //     if (data.newImages) {
+  //       data.newImages.forEach((image) => {
+  //         formData.append("files", image);
+  //       });
+  //     }
 
-      if (data.newImages) {
-        data.newImages.forEach((image) => {
-          formData.append("files", image);
-        });
-      }
+  //     const response = await authenticatedFetch(`/api/trade`, {
+  //       method: "POST",
+  //       body: formData,
+  //     });
 
-      const response = await fetch(
-        `https://api.kochokchok.shop/api/v1/boards/newBoard`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-          credentials: "include",
-        }
-      );
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.message);
+  //     }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message);
-      }
-
-      alert("게시물이 성공적으로 등록되었습니다.");
-      router.push("/jobList");
-    } catch (error) {
-      alert(
-        error instanceof Error
-          ? error.message
-          : "등록에 실패했습니다. 다시 시도해주세요."
-      );
-    }
-  };
+  //     alert("게시물이 성공적으로 등록되었습니다.");
+  //     router.push("/jobList");
+  //   } catch (error) {
+  //     alert(
+  //       error instanceof Error
+  //         ? error.message
+  //         : "등록에 실패했습니다. 다시 시도해주세요."
+  //     );
+  //   }
+  // };
 
   // const onEdit = async (data: JobFormData) => {
   //   try {
@@ -202,6 +195,7 @@ export const useJobBoardNew = () => {
             method: "GET",
             headers: {
               Authorization: `Bearer ${token}`,
+              "Access-Control-Allow-Headers": "Authorization, Content-Type",
             },
             credentials: "include",
           }
@@ -246,10 +240,12 @@ export const useJobBoardNew = () => {
     handleOpenFileDialog,
     handleFileChange,
     existingImages,
-    onSubmit,
+
     handleDeleteExistingImage,
     watch,
     setValue,
     fileInputRef,
+    router,
+    newImages,
   };
 };

@@ -31,10 +31,6 @@ export interface ExistingImage {
 
 export type JobFormData = z.infer<typeof jobFormSchema>;
 
-export interface JobListNewProps {
-  isEdit: boolean;
-}
-
 export interface BoardImage {
   image_id: number;
   image_url: string;
