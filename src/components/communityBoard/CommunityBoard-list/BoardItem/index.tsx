@@ -15,7 +15,6 @@ export default function CommunityBoardItem({ post }: { post: any }) {
               </span>
               <span>•</span>
               <span>
-                {" "}
                 {(() => {
                   const date = new Date(post.createdAt);
                   const year = date.getFullYear();
