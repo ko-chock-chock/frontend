@@ -1,7 +1,7 @@
 import JobBoardWritePage from "@/components/JobBoard-new";
 
 const JobListNew = () => {
-  return <JobBoardWritePage isEdit={false} />;
+  return <JobBoardWritePage />;
 };
 
 export default JobListNew;

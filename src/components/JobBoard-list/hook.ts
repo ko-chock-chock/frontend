@@ -18,12 +18,6 @@ const useJobBoardList = () => {
 
   const fetchBoards = async (keyword: string, region: string) => {
     try {
-      setIsLoading(true);
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
-      }
-
       const queryParams = new URLSearchParams();
       if (keyword) queryParams.append("keyword", keyword);
       if (region) queryParams.append("region", region);
