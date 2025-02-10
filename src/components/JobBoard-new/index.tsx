@@ -1,14 +1,24 @@
 "use client";
-import { Controller } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import Button from "@/commons/Button";
 import Input from "@/commons/input";
-import Image from "next/image";
 import RegionDropdown from "@/commons/regionsDropdown";
-import { JobListNewProps } from "./types";
-import { useJobBoardNew } from "./hook";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
+import { useRef } from "react";
 
-// 폼 스키마 수정
+interface onSubmitProps {
+  title: string;
+  mainRegion: string;
+  subRegion: string;
+  price: string;
+  contents: string;
+  newImages?: File[];
+}
+
+// 폼 스키마
 export const jobFormSchema = z.object({
   title: z.string().min(1, "제목을 입력해주세요"),
   mainRegion: z.string().min(1, "지역을 선택해주세요"),
@@ -21,20 +31,107 @@ export const jobFormSchema = z.object({
   newImages: z.array(z.instanceof(File)).optional(),
 });
 
-const JobBoardNew = ({ isEdit }: JobListNewProps) => {
+const JobBoardNew = () => {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const router = useRouter();
+
   const {
     control,
     handleSubmit,
-    errors,
-    handleOpenFileDialog,
-    handleFileChange,
-    onSubmit,
-    existingImages,
-    handleDeleteExistingImage,
-    watch,
+    formState: { errors },
     setValue,
-    fileInputRef,
-  } = useJobBoardNew();
+    watch,
+  } = useForm({
+    resolver: zodResolver(jobFormSchema),
+    defaultValues: {
+      title: "",
+      mainRegion: "",
+      subRegion: "",
+      price: "",
+      contents: "",
+      newImages: [] as File[],
+    },
+  });
+
+  // 엑세스 토큰 가져옴
+  const getAccessToken = (): string | null => {
+    const tokenStorageStr = localStorage.getItem("token-storage");
+    if (!tokenStorageStr) return null;
+    const tokenData = JSON.parse(tokenStorageStr);
+    return tokenData?.accessToken || null;
+  };
+
+  const onSubmit = async (data: onSubmitProps) => {
+    try {
+      const token = getAccessToken();
+      if (!token) throw new Error("로그인이 필요합니다.");
+
+      let imageLinks: string[] = [];
+
+      // 1️. 이미지 업로드 (성공하면 이미지 URL 배열을 받음)
+      if (data.newImages?.length) {
+        const formData = new FormData();
+        data.newImages.forEach((file) => formData.append("files", file));
+
+        const uploadResponse = await fetch(
+          "http://3.36.40.240:8001/api/uploads/multiple",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!uploadResponse.ok) throw new Error("이미지 업로드 실패");
+
+        const uploadResult = await uploadResponse.json();
+        imageLinks = uploadResult;
+      }
+
+      // 2️. 게시글 데이터 구성 (이미지 URL 포함)
+      const payload = {
+        title: data.title,
+        region: `${data.mainRegion} ${data.subRegion}`,
+        price: data.price,
+        contents: data.contents,
+        images: imageLinks,
+      };
+
+      // 3️. 최종 게시글 등록 요청 (이미지 포함)
+      const response = await fetch("http://3.36.40.240:8001/api/trade", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "등록 실패");
+      }
+
+      alert("게시물이 성공적으로 등록되었습니다.");
+      router.push("/jobList");
+    } catch (error) {
+      console.error("요청 에러:", error);
+      alert(error instanceof Error ? error.message : "등록에 실패했습니다.");
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const fileArray = Array.from(files);
+      setValue("newImages", fileArray, { shouldValidate: true });
+    }
+  };
+
+  const handleOpenFileDialog = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -98,6 +195,13 @@ const JobBoardNew = ({ isEdit }: JobListNewProps) => {
                 {...field}
                 type="text"
                 placeholder="₩ 1,000"
+                value={
+                  field.value
+                    ? `₩ ${Number(
+                        field.value.replace(/[^0-9]/g, "")
+                      ).toLocaleString()}`
+                    : ""
+                }
                 className="w-full"
               />
             )}
@@ -147,30 +251,7 @@ const JobBoardNew = ({ isEdit }: JobListNewProps) => {
               />
             </div>
 
-            {/* 기존 이미지 썸네일 */}
-            {isEdit &&
-              existingImages.map((image) => (
-                <div
-                  key={image.image_id}
-                  className="w-[100px] h-[100px] relative group"
-                >
-                  <Image
-                    src={image.image_url}
-                    alt={`existing-image-${image.image_id}`}
-                    fill
-                    className="object-cover rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteExistingImage(image.image_id)}
-                    className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-
-            {/* 새로 추가된 이미지 썸네일 */}
+            {/* 이미지 선택 후 보여질 이미지 썸네일 */}
             {watch("newImages")?.map((image, index) => (
               <div key={index} className="w-[100px] h-[100px] relative group">
                 <Image
@@ -210,7 +291,7 @@ const JobBoardNew = ({ isEdit }: JobListNewProps) => {
             width="full"
             className="h-[3.5rem]"
           >
-            {isEdit ? "수정하기" : "등록하기"}
+            {"등록하기"}
           </Button>
         </div>
       </form>
