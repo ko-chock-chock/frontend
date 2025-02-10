@@ -7,7 +7,12 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
-    domains: ["ko-chock-chock.s3.ap-northeast-2.amazonaws.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "kmong-s3.s3.ap-northeast-2.amazonaws.com",
+      },
+    ],
   },
 };
 
