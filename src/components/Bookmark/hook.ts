@@ -118,11 +118,11 @@ const DUMMY_BOOKMARK_POSTS: BookmarkedPost[] = [
  * API 엔드포인트 상수
  * - 추후 환경변수로 관리 필요
  */
-const API_ENDPOINTS = {
-  TRADE_POSTS: '/api/users/trade-posts',
-  COMMUNITY_POSTS: '/api/users/community-posts',
-  TRADE_REVIEWS: '/api/users/trade-reviews'
-} as const;
+// const API_ENDPOINTS = {
+//   TRADE_POSTS: '/api/users/trade-posts',
+//   COMMUNITY_POSTS: '/api/users/community-posts',
+//   TRADE_REVIEWS: '/api/users/trade-reviews'
+// } as const;
 
 /**
  * 마이페이지 게시글 목록을 관리하는 커스텀 훅

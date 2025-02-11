@@ -9,44 +9,7 @@ import PostCard from "./PostCard";
 import { TabType } from "./TabGroup/types";
 import { Post, isBookmarkedPost, isWishlistedPost } from "./PostCard/types";
 
-/**
- * 마이페이지 메인 컴포넌트
- *
- * 주요 기능:
- * 1. 프로필 정보 표시
- *   - 사용자 기본 정보
- *   - 프로필 수정 기능
- *
- * 2. 탭 기반 게시글 관리
- *   - 거래글 관리: 게시중/게시완료 상태 구분
- *   - 커뮤니티글 관리
- *   - 받은 후기 목록
- *
- * 3. 게시글 목록 표시
- *   - 무한 스크롤 지원
- *   - 상태별 필터링
- *   - 빈 목록 처리
- *
- * 컴포넌트 구조:
- * 1. ProfileCard
- *   - 사용자 프로필 표시
- *   - 프로필 수정 페이지 연결
- *
- * 2. TabGroup
- *   - 탭 전환 UI
- *   - 게시글 상태별 카운트
- *   - Sticky 포지셔닝
- *
- * 3. PostCard
- *   - 게시글 타입별 레이아웃
- *   - 상호작용 정보 표시
- *   - 상대시간 표시
- *
- * 수정사항 (2024.02.04):
- * 1. 게시글 수 계산 로직 최적화
- * 2. 탭 상태 관리 개선
- * 3. 타입 안정성 강화
- */
+
 export default function BookmarkComponent() {
   // 라우터 초기화
   const router = useRouter();
