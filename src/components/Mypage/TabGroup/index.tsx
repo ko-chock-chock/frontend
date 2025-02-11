@@ -1,7 +1,6 @@
 // src/components/Mypage/TabGroup/index.tsx
 
-import { TabGroupProps, TABS } from "./types";
-import Button from "@/commons/Button";
+
 
 /**
  * 마이페이지 탭 그룹 컴포넌트
@@ -43,11 +42,17 @@ import Button from "@/commons/Button";
  * 3. 게시글 수 표시 방식 최적화
  * 4. 레이아웃 및 간격 조정
  */
+
+import { TabGroupProps, TABS } from "./types";
+import Button from "@/commons/Button";
+
 export default function TabGroup({
   currentTab,
   onTabChange,
   postCounts,
 }: TabGroupProps) {
+  // postCounts 전체 로그 추가
+  // console.log("📊 TabGroup PostCounts:", postCounts);
   return (
     <div className="w-full bg-background">
       {/* 탭 버튼 컨테이너 */}
@@ -55,6 +60,11 @@ export default function TabGroup({
         <div className="w-full flex justify-between items-center gap-1">
           {TABS.map(({ label, value }) => {
             const isActive = currentTab === value;
+
+            // 각 탭별 상세 로그
+            // console.log(
+            //   `🏷️ Tab: ${label}, Value: ${value}, Count: ${postCounts[value]}`
+            // );
 
             return (
               <Button
