@@ -1,8 +1,8 @@
-import JobBoardWritePage from "@/components/JobBoard-new";
+import JobBoardEdit from "@/components/JobBoard-edit";
 import React from "react";
 
 const JobListEdit = () => {
-  return <JobBoardWritePage isEdit={true} />;
+  return <JobBoardEdit />;
 };
 
 export default JobListEdit;
