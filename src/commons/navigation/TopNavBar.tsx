@@ -30,6 +30,7 @@ interface TopNavBarProps {
 }
 
 const TopNavBar = ({ title, type }: TopNavBarProps) => {
+  // console.log('TopNavBar props:', { title, type }); // 디버깅용 로그 추가
  const router = useRouter();
  const pathname = usePathname(); // 현재 페이지 경로
 
