@@ -4,10 +4,10 @@ import { z } from "zod";
 import Button from "@/commons/Button";
 import Input from "@/commons/input";
 import RegionDropdown from "@/commons/regionsDropdown";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface onSubmitProps {
   title: string;
@@ -31,9 +31,11 @@ export const jobFormSchema = z.object({
   newImages: z.array(z.instanceof(File)).optional(),
 });
 
-const JobBoardNew = () => {
+const JobBoardEdit = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
+  const { boardId } = useParams();
+  const [existingImages, setExistingImages] = useState<string[]>([]); // 기존 이미지 저장
 
   const {
     control,
@@ -41,7 +43,7 @@ const JobBoardNew = () => {
     formState: { errors },
     setValue,
     watch,
-  } = useForm({
+  } = useForm<onSubmitProps>({
     resolver: zodResolver(jobFormSchema),
     defaultValues: {
       title: "",
@@ -49,7 +51,7 @@ const JobBoardNew = () => {
       subRegion: "",
       price: "",
       contents: "",
-      newImages: [] as File[],
+      newImages: [],
     },
   });
 
@@ -61,14 +63,53 @@ const JobBoardNew = () => {
     return tokenData?.accessToken || null;
   };
 
+  // 기존 등록된 데이터 불러오기
+  useEffect(() => {
+    const fetchPostData = async () => {
+      const token = getAccessToken();
+      if (!token) throw new Error("로그인이 필요합니다.");
+      if (!boardId) return;
+      try {
+        const response = await fetch(
+          `http://3.36.40.240:8001/api/trade/${boardId}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (!response.ok) throw new Error("게시글을 불러올 수 없습니다.");
+        const postData = await response.json();
+
+        const [mainRegion = "", subRegion = ""] = postData.region.split(" ");
+        const priceString = String(postData.price ?? "");
+
+        // 기존 데이터 폼에 입력
+        setValue("title", postData.title);
+        setValue("mainRegion", mainRegion);
+        setValue("subRegion", subRegion);
+        setValue("price", priceString);
+        setValue("contents", postData.contents);
+        setExistingImages(postData.images || []);
+      } catch (error) {
+        console.error(error);
+        alert("게시글 불러오기에 실패했습니다.");
+      }
+    };
+
+    fetchPostData();
+  }, [boardId, setValue]);
+
   const onSubmit = async (data: onSubmitProps) => {
     try {
       const token = getAccessToken();
       if (!token) throw new Error("로그인이 필요합니다.");
 
-      let imageLinks: string[] = [];
+      let imageLinks: string[] = [...existingImages];
 
-      // 1️. 이미지 업로드 (성공하면 이미지 URL 배열을 받음)
+      // 1. 새로 추가한 이미지가 있으면 업로드 후 기존 이미지와 합침
       if (data.newImages?.length) {
         const formData = new FormData();
         data.newImages.forEach((file) => formData.append("files", file));
@@ -84,10 +125,10 @@ const JobBoardNew = () => {
         if (!uploadResponse.ok) throw new Error("이미지 업로드 실패");
 
         const uploadResult = await uploadResponse.json();
-        imageLinks = uploadResult;
+        imageLinks = [...imageLinks, ...uploadResult]; // 기존 이미지 + 새 이미지
       }
 
-      // 2️. 게시글 데이터 구성 (이미지 URL 포함)
+      // 2️. 게시글 데이터 구성
       const payload = {
         title: data.title,
         region: `${data.mainRegion} ${data.subRegion}`,
@@ -96,26 +137,28 @@ const JobBoardNew = () => {
         images: imageLinks,
       };
 
-      // 3️. 최종 게시글 등록 요청 (이미지 포함)
-      const response = await fetch("http://3.36.40.240:8001/api/trade", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        `http://3.36.40.240:8001/api/trade/${boardId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "등록 실패");
+        throw new Error(errorData.message || "수정 실패");
       }
 
-      alert("게시물이 성공적으로 등록되었습니다.");
+      alert("게시물이 성공적으로 수정되었습니다.");
       router.push("/jobList");
     } catch (error) {
       console.error("요청 에러:", error);
-      alert(error instanceof Error ? error.message : "등록에 실패했습니다.");
+      alert(error instanceof Error ? error.message : "수정에 실패했습니다.");
     }
   };
 
@@ -133,6 +176,10 @@ const JobBoardNew = () => {
     }
   };
 
+  const handleRemoveExistingImage = (index: number) => {
+    setExistingImages((prevImages) => prevImages.filter((_, i) => i !== index));
+  };
+
   const handleRemoveNewImage = (index: number) => {
     const newImages = [...(watch("newImages") || [])];
     newImages.splice(index, 1);
@@ -142,6 +189,7 @@ const JobBoardNew = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-6 flex-1">
+        {/* 제목 */}
         <div>
           <label className="block text-sm text-text-primary mb-1">제목</label>
           <Controller
@@ -161,6 +209,7 @@ const JobBoardNew = () => {
           )}
         </div>
 
+        {/* 지역 */}
         <div>
           <label className="block text-sm text-text-primary mb-1">
             지역 선택
@@ -191,6 +240,7 @@ const JobBoardNew = () => {
           )}
         </div>
 
+        {/* 금액 */}
         <div>
           <label className="block text-sm text-text-primary mb-1">금액</label>
           <Controller
@@ -223,6 +273,7 @@ const JobBoardNew = () => {
           )}
         </div>
 
+        {/* 상세 내용 */}
         <div>
           <label className="block text-sm text-text-primary mb-1">
             상세 내용
@@ -245,6 +296,7 @@ const JobBoardNew = () => {
           )}
         </div>
 
+        {/* 사진 첨부 */}
         <div>
           <label className="block text-sm font-medium text-text-primary mb-2">
             사진 첨부
@@ -263,13 +315,37 @@ const JobBoardNew = () => {
               />
             </div>
 
-            {/* 이미지 선택 후 보여질 이미지 썸네일 */}
+            {/* 기존 이미지 썸네일 */}
+            {existingImages.map((imageUrl, index) => (
+              <div
+                key={`existing-${index}`}
+                className="w-[100px] h-[100px] relative group"
+              >
+                <Image
+                  src={imageUrl}
+                  alt={`existing-image-${index}`}
+                  fill
+                  unoptimized
+                  className="object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveExistingImage(index)}
+                  className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+
+            {/* 새로 추가한 이미지 썸네일 */}
             {watch("newImages")?.map((image, index) => (
               <div key={index} className="w-[100px] h-[100px] relative group">
                 <Image
                   src={URL.createObjectURL(image)}
                   alt={`new-image-${index}`}
                   fill
+                  unoptimized
                   className="object-cover rounded-lg"
                 />
                 <button
@@ -292,6 +368,7 @@ const JobBoardNew = () => {
           />
         </div>
 
+        {/* 수정하기 버튼 */}
         <div className="w-full">
           <Button
             type="submit"
@@ -299,7 +376,7 @@ const JobBoardNew = () => {
             width="full"
             className="h-[3.5rem]"
           >
-            {"등록하기"}
+            수정하기
           </Button>
         </div>
       </form>
@@ -307,4 +384,4 @@ const JobBoardNew = () => {
   );
 };
 
-export default JobBoardNew;
+export default JobBoardEdit;
