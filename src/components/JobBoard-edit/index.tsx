@@ -34,7 +34,7 @@ export const jobFormSchema = z.object({
 const JobBoardEdit = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
-  const { boardId: boardId } = useParams();
+  const { boardId } = useParams();
   const [existingImages, setExistingImages] = useState<string[]>([]); // 기존 이미지 저장
 
   const {
@@ -43,7 +43,7 @@ const JobBoardEdit = () => {
     formState: { errors },
     setValue,
     watch,
-  } = useForm({
+  } = useForm<onSubmitProps>({
     resolver: zodResolver(jobFormSchema),
     defaultValues: {
       title: "",
@@ -51,7 +51,7 @@ const JobBoardEdit = () => {
       subRegion: "",
       price: "",
       contents: "",
-      newImages: [] as File[],
+      newImages: [],
     },
   });
 
@@ -63,7 +63,7 @@ const JobBoardEdit = () => {
     return tokenData?.accessToken || null;
   };
 
-  // 기존 등록 데이터 불러오기
+  // 기존 등록된 데이터 불러오기
   useEffect(() => {
     const fetchPostData = async () => {
       const token = getAccessToken();
@@ -83,14 +83,15 @@ const JobBoardEdit = () => {
         if (!response.ok) throw new Error("게시글을 불러올 수 없습니다.");
         const postData = await response.json();
 
-        // ✅ 기존 데이터 폼에 입력
-        setValue("title", postData.title);
-        setValue("mainRegion", postData.region.split(" ")[0] || "");
-        setValue("subRegion", postData.region.split(" ")[1] || "");
-        setValue("price", String(postData.price));
-        setValue("contents", postData.contents);
+        const [mainRegion = "", subRegion = ""] = postData.region.split(" ");
+        const priceString = String(postData.price ?? "");
 
-        // ✅ 기존 이미지 저장
+        // 기존 데이터 폼에 입력
+        setValue("title", postData.title);
+        setValue("mainRegion", mainRegion);
+        setValue("subRegion", subRegion);
+        setValue("price", priceString);
+        setValue("contents", postData.contents);
         setExistingImages(postData.images || []);
       } catch (error) {
         console.error(error);
@@ -106,9 +107,9 @@ const JobBoardEdit = () => {
       const token = getAccessToken();
       if (!token) throw new Error("로그인이 필요합니다.");
 
-      let imageLinks: string[] = [...existingImages]; // 기존 이미지 유지
+      let imageLinks: string[] = [...existingImages];
 
-      // ✅ 새로 추가한 이미지가 있으면 업로드 후 기존 이미지와 합침
+      // 1. 새로 추가한 이미지가 있으면 업로드 후 기존 이미지와 합침
       if (data.newImages?.length) {
         const formData = new FormData();
         data.newImages.forEach((file) => formData.append("files", file));
@@ -124,16 +125,16 @@ const JobBoardEdit = () => {
         if (!uploadResponse.ok) throw new Error("이미지 업로드 실패");
 
         const uploadResult = await uploadResponse.json();
-        imageLinks = [...imageLinks, ...uploadResult]; // 기존 이미지 + 새 이미지 합치기
+        imageLinks = [...imageLinks, ...uploadResult]; // 기존 이미지 + 새 이미지
       }
 
-      // ✅ 기존 이미지 유지 + 새 이미지 추가해서 전송
+      // 2️. 게시글 데이터 구성
       const payload = {
         title: data.title,
         region: `${data.mainRegion} ${data.subRegion}`,
         price: data.price,
         contents: data.contents,
-        images: imageLinks, // 기존 이미지 + 새 이미지 포함
+        images: imageLinks,
       };
 
       const response = await fetch(
@@ -174,6 +175,7 @@ const JobBoardEdit = () => {
       fileInputRef.current.click();
     }
   };
+
   const handleRemoveExistingImage = (index: number) => {
     setExistingImages((prevImages) => prevImages.filter((_, i) => i !== index));
   };
@@ -187,6 +189,7 @@ const JobBoardEdit = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-6 flex-1">
+        {/* 제목 */}
         <div>
           <label className="block text-sm text-text-primary mb-1">제목</label>
           <Controller
@@ -206,6 +209,7 @@ const JobBoardEdit = () => {
           )}
         </div>
 
+        {/* 지역 */}
         <div>
           <label className="block text-sm text-text-primary mb-1">
             지역 선택
@@ -236,41 +240,40 @@ const JobBoardEdit = () => {
           )}
         </div>
 
+        {/* 금액 */}
         <div>
           <label className="block text-sm text-text-primary mb-1">금액</label>
           <Controller
             name="price"
             control={control}
             render={({ field }) => {
-              const rawValue = field.value ? String(field.value) : "";
-              const formattedValue =
-                rawValue.replace(/[^0-9]/g, "") === ""
-                  ? ""
-                  : `₩ ${Number(
-                      rawValue.replace(/[^0-9]/g, "")
-                    ).toLocaleString()}`;
+              const displayValue = field.value
+                ? `₩ ${Number(
+                    field.value.replace(/[^0-9]/g, "")
+                  ).toLocaleString()}`
+                : "";
 
               return (
                 <Input
                   {...field}
                   type="text"
                   placeholder="₩ 1,000"
-                  value={formattedValue}
+                  value={displayValue}
                   onChange={(e) => {
-                    const numericValue = e.target.value.replace(/[^0-9]/g, "");
-                    field.onChange(numericValue);
+                    const rawValue = e.target.value.replace(/[^0-9]/g, "");
+                    field.onChange(rawValue);
                   }}
                   className="w-full"
                 />
               );
             }}
           />
-
           {errors.price && (
             <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
           )}
         </div>
 
+        {/* 상세 내용 */}
         <div>
           <label className="block text-sm text-text-primary mb-1">
             상세 내용
@@ -293,6 +296,7 @@ const JobBoardEdit = () => {
           )}
         </div>
 
+        {/* 사진 첨부 */}
         <div>
           <label className="block text-sm font-medium text-text-primary mb-2">
             사진 첨부
@@ -334,7 +338,6 @@ const JobBoardEdit = () => {
               </div>
             ))}
 
-            {/* 이미지 선택 후 보여질 이미지 썸네일 */}
             {/* 새로 추가한 이미지 썸네일 */}
             {watch("newImages")?.map((image, index) => (
               <div key={index} className="w-[100px] h-[100px] relative group">
@@ -365,6 +368,7 @@ const JobBoardEdit = () => {
           />
         </div>
 
+        {/* 수정하기 버튼 */}
         <div className="w-full">
           <Button
             type="submit"
@@ -372,7 +376,7 @@ const JobBoardEdit = () => {
             width="full"
             className="h-[3.5rem]"
           >
-            {"수정하기"}
+            수정하기
           </Button>
         </div>
       </form>

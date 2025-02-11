@@ -133,6 +133,12 @@ const JobBoardNew = () => {
     }
   };
 
+  const handleRemoveNewImage = (index: number) => {
+    const newImages = [...(watch("newImages") || [])];
+    newImages.splice(index, 1);
+    setValue("newImages", newImages);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-6 flex-1">
@@ -190,21 +196,27 @@ const JobBoardNew = () => {
           <Controller
             name="price"
             control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="text"
-                placeholder="₩ 1,000"
-                value={
-                  field.value
-                    ? `₩ ${Number(
-                        field.value.replace(/[^0-9]/g, "")
-                      ).toLocaleString()}`
-                    : ""
-                }
-                className="w-full"
-              />
-            )}
+            render={({ field }) => {
+              const displayValue = field.value
+                ? `₩ ${Number(
+                    field.value.replace(/[^0-9]/g, "")
+                  ).toLocaleString()}`
+                : "";
+
+              return (
+                <Input
+                  {...field}
+                  type="text"
+                  placeholder="₩ 1,000"
+                  value={displayValue}
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/[^0-9]/g, "");
+                    field.onChange(rawValue);
+                  }}
+                  className="w-full"
+                />
+              );
+            }}
           />
           {errors.price && (
             <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
@@ -262,11 +274,7 @@ const JobBoardNew = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    const newImages = [...(watch("newImages") || [])];
-                    newImages.splice(index, 1);
-                    setValue("newImages", newImages);
-                  }}
+                  onClick={() => handleRemoveNewImage(index)}
                   className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                 >
                   ×

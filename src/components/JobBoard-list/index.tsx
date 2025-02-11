@@ -13,6 +13,7 @@ const JobBoardList = () => {
     setSelectedSubRegion,
     writeButton,
     router,
+    lastBoardElementRef,
   } = useJobBoardList();
 
   return (
@@ -24,10 +25,11 @@ const JobBoardList = () => {
         setSelectedSubRegion={setSelectedSubRegion}
       />
       <ul>
-        {boards.map((board) => (
+        {boards?.map((board, index) => (
           <li
             key={board.id}
             className="flex flex-col items-center gap-3 w-full pb-4 pt-4 border-b-[1.5px] border-borderBottom"
+            ref={boards.length === index + 1 ? lastBoardElementRef : null}
             onClick={() => router.push(`/jobList/${board.id}`)}
           >
             <article className="flex items-center w-full rounded-lg">

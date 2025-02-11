@@ -2,12 +2,12 @@
 
 /**
  * UserStore - 사용자 정보 전역 상태 관리
- * 
+ *
  * 주요 기능:
  * 1. 사용자 프로필 정보 관리
  * 2. 사용자 정보 CRUD 작업
  * 3. 전역 상태 영속성 처리
- * 
+ *
  * 수정사항 (2024.02.05):
  * - 토큰 관련 로직을 TokenStorage로 이관
  * - 사용자 정보 관리 기능 강화
@@ -16,7 +16,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { TokenStorage } from '@/components/auth/utils/tokenUtils';
+import { TokenStorage } from "@/components/auth/utils/tokenUtils";
 
 /**
  * 사용자 프로필 정보 타입
@@ -34,7 +34,7 @@ export interface UserProfile {
 interface UserState {
   // 상태 (State)
   user: UserProfile | null;
-  
+
   // 액션 (Actions)
   setUser: (user: UserProfile) => void;
   clearUser: () => void;
@@ -58,7 +58,7 @@ export const useUserStore = create<UserState>()(
           id: user.id,
           name: user.name,
           email: user.email,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
         set({ user });
       },
@@ -75,7 +75,7 @@ export const useUserStore = create<UserState>()(
       updateUserInfo: (updateData) => {
         console.log("[UserStore] 사용자 정보 업데이트:", updateData);
         set((state) => ({
-          user: state.user ? { ...state.user, ...updateData } : null
+          user: state.user ? { ...state.user, ...updateData } : null,
         }));
       },
 
@@ -95,13 +95,13 @@ export const useUserStore = create<UserState>()(
             `http://13.209.11.201:8001/api/users/${currentUser.id}`,
             {
               headers: {
-                Authorization: `Bearer ${token}`
-              }
+                Authorization: `Bearer ${token}`,
+              },
             }
           );
 
           if (!response.ok) {
-            throw new Error('사용자 정보 조회 실패');
+            throw new Error("사용자 정보 조회 실패");
           }
 
           const userInfo = await response.json();
@@ -114,8 +114,8 @@ export const useUserStore = create<UserState>()(
     }),
     {
       name: "user-storage",
-      partialize: (state) => ({ 
-        user: state.user
+      partialize: (state) => ({
+        user: state.user,
       }),
     }
   )
@@ -123,12 +123,12 @@ export const useUserStore = create<UserState>()(
 
 /**
  * UserStore 사용 예시
- * 
+ *
  * 1. 컴포넌트에서 사용자 정보 접근
  * ```tsx
  * function ProfileComponent() {
  *   const user = useUserStore((state) => state.user);
- *   
+ *
  *   return (
  *     <div>
  *       <h1>프로필</h1>
@@ -142,16 +142,16 @@ export const useUserStore = create<UserState>()(
  *   );
  * }
  * ```
- * 
+ *
  * 2. 사용자 정보 업데이트
  * ```tsx
  * function UpdateProfileComponent() {
  *   const updateUserInfo = useUserStore((state) => state.updateUserInfo);
- * 
+ *
  *   const handleUpdateName = (newName: string) => {
  *     updateUserInfo({ name: newName });
  *   };
- * 
+ *
  *   return (
  *     <button onClick={() => handleUpdateName("새이름")}>
  *       이름 변경
@@ -159,29 +159,29 @@ export const useUserStore = create<UserState>()(
  *   );
  * }
  * ```
- * 
+ *
  * 3. 로그아웃 처리
  * ```tsx
  * function LogoutButton() {
  *   const clearUser = useUserStore((state) => state.clearUser);
- * 
+ *
  *   const handleLogout = () => {
  *     clearUser(); // 사용자 정보와 토큰을 모두 제거
  *   };
- * 
+ *
  *   return <button onClick={handleLogout}>로그아웃</button>;
  * }
  * ```
- * 
+ *
  * 4. 사용자 정보 갱신
  * ```tsx
  * function UserProfilePage() {
  *   const fetchUserInfo = useUserStore((state) => state.fetchUserInfo);
- * 
+ *
  *   useEffect(() => {
  *     fetchUserInfo(); // 컴포넌트 마운트 시 최신 정보 조회
  *   }, [fetchUserInfo]);
- * 
+ *
  *   return <div>프로필 페이지</div>;
  * }
  * ```
