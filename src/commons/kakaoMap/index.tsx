@@ -57,16 +57,13 @@ const KakaoMapComponent: React.FC = () => {
     const fetchBoardData = async () => {
       try {
         console.log("[DEBUG] Fetching board data for boardId:", boardId);
-        const response = await fetch(
-          `http://3.36.40.240:8001/api/trade/${boardId}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const response = await fetch(`/api/trade/${boardId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);

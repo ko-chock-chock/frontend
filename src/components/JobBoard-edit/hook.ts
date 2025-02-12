@@ -56,16 +56,13 @@ const useJobBoardEdit = () => {
       if (!token) throw new Error("로그인이 필요합니다.");
       if (!boardId) return;
       try {
-        const response = await fetch(
-          `http://3.36.40.240:8001/api/trade/${boardId}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const response = await fetch(`/api/trade/${boardId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
         if (!response.ok) throw new Error("게시글을 불러올 수 없습니다.");
         const postData = await response.json();
 
@@ -100,13 +97,10 @@ const useJobBoardEdit = () => {
         const formData = new FormData();
         data.newImages.forEach((file) => formData.append("files", file));
 
-        const uploadResponse = await fetch(
-          "http://3.36.40.240:8001/api/uploads/multiple",
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
+        const uploadResponse = await fetch("/api/uploads/multiple", {
+          method: "POST",
+          body: formData,
+        });
 
         if (!uploadResponse.ok) throw new Error("이미지 업로드 실패");
 
@@ -123,17 +117,14 @@ const useJobBoardEdit = () => {
         images: imageLinks,
       };
 
-      const response = await fetch(
-        `http://3.36.40.240:8001/api/trade/${boardId}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(`/api/trade/${boardId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
