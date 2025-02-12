@@ -53,7 +53,6 @@ const CommunityBoardDetail = ({
 }: {
   params: {
     boardId: string;
-    id: string;
   };
 }) => {
   const [post, setPost] = useState<any>(null);
@@ -173,7 +172,7 @@ const CommunityBoardDetail = ({
                 </span>
                 <span className="flex items-center">
                   <Image
-                    src="/icons/post_list_like_icon_24px.svg"
+                    src="/icons/community_detail_bookmark_24px.svg"
                     alt="Like count"
                     width={24}
                     height={24}
