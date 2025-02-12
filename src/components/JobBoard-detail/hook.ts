@@ -24,30 +24,24 @@ const useJobBoardDetail = () => {
       if (!boardId) return;
       try {
         // 게시글 정보 가져옴
-        const response = await fetch(
-          `http://3.36.40.240:8001/api/trade/${boardId}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const response = await fetch(`/api/trade/${boardId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
         const result = await response.json();
         setBoardData(result);
 
         // 내가 좋아요한 게시글인지 확인
-        const checkLikeResponse = await fetch(
-          `http://3.36.40.240:8001/api/users/trade-posts/liked`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const checkLikeResponse = await fetch(`/api/users/trade-posts/liked`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
         const checkLikeResult = await checkLikeResponse.json();
         setCheckLike(checkLikeResult);
 
@@ -67,16 +61,13 @@ const useJobBoardDetail = () => {
   const likeButtonClickHandler = async () => {
     const token = getAccessToken();
     try {
-      const response = await fetch(
-        `http://3.36.40.240:8001/api/trade/${boardId}/like`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`/api/trade/${boardId}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (response.ok) {
         setIsLiked((prevState) => !prevState);

@@ -63,13 +63,10 @@ export const useJobBoardNew = () => {
         const formData = new FormData();
         data.newImages.forEach((file) => formData.append("files", file));
 
-        const uploadResponse = await fetch(
-          "http://3.36.40.240:8001/api/uploads/multiple",
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
+        const uploadResponse = await fetch("/api/uploads/multiple", {
+          method: "POST",
+          body: formData,
+        });
 
         if (!uploadResponse.ok) throw new Error("이미지 업로드 실패");
 
@@ -87,7 +84,7 @@ export const useJobBoardNew = () => {
       };
 
       // 3️. 최종 게시글 등록 요청 (이미지 포함)
-      const response = await fetch("http://3.36.40.240:8001/api/trade", {
+      const response = await fetch("/api/trade", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
