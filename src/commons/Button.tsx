@@ -91,7 +91,7 @@ export default function Button({
      rounded-xl
      ${
        disabled
-         ? "bg-button-bg-secondary text-button-text-secondary cursor-not-allowed" 
+         ? "bg-button-bg-secondary text-button-text-secondary cursor-not-allowed"
          : "bg-button-bg-primary text-button-text-primary"
      }
    `,
@@ -121,19 +121,16 @@ export default function Button({
    `,
 
     design5: `
-     flex justify-center items-center
-      h-[2.125rem]  // 34px
-  min-w-[5rem]  // 최소 너비 80px
-      gap-1
-     text-sm  
-     rounded-full
-     ${
-       disabled
-         ? "bg-button-bg-secondary text-button-text-secondary cursor-not-allowed"
-         : active
-           ? "bg-button-bg-primary text-button-text-primary"
-           : "bg-button-bg-secondary text-button-text-secondary"
-     }
+   flex justify-center items-center
+   h-[2.125rem] w-[5rem]
+   gap-1
+   text-sm  
+   rounded-full
+   ${
+     active
+       ? "bg-button-bg-primary text-white"
+       : "bg-button-bg-secondary text-button-text-secondary"
+   }
    `,
   };
 

@@ -1,21 +1,38 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import { useParams } from "next/navigation";
 import React, { useEffect, useState, useRef } from "react";
-import io from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import { useUserStore } from "../store/userStore";
 
-const KakaoMapComponent = () => {
-  const { boardId } = useParams();
-  const [boardData, setBoardData] = useState<any>(null);
-  const [locationData, setLocationData] = useState<any[]>([]);
-  const [userLocation, setUserLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
+// 위치 정보를 나타내는 인터페이스
+interface ILocation {
+  latitude: number;
+  longitude: number;
+}
+
+// API에서 받아오는 게시물 데이터 인터페이스 (필요에 따라 확장 가능)
+interface IBoardData {
+  writeUserId: number;
+}
+
+// Kakao Map SDK에 대한 타입 선언 (간단히 any로 처리)
+declare global {
+  interface Window {
+    kakao: any;
+  }
+}
+
+const KakaoMapComponent: React.FC = () => {
+  const { boardId } = useParams() as { boardId: string };
+  const [boardData, setBoardData] = useState<IBoardData | null>(null);
+  const [locationData, setLocationData] = useState<ILocation[]>([]);
+  const [userLocation, setUserLocation] = useState<ILocation | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
-  const socketRef = useRef<any>(null);
+  const socketRef = useRef<Socket | null>(null);
   const appKey = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
 
   // 토큰 관련 함수 (필요 시 TokenStorage로 대체 가능)
@@ -55,7 +72,7 @@ const KakaoMapComponent = () => {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        const data = await response.json();
+        const data: IBoardData = await response.json();
         console.log("[DEBUG] Board data fetched:", data);
         setBoardData(data);
       } catch (error) {
@@ -78,11 +95,6 @@ const KakaoMapComponent = () => {
         window.kakao.maps.load(() => {
           if (boardData) {
             console.log("[DEBUG] boardData available:", boardData);
-            console.log(
-              "[DEBUG] Comparing loggedInUserId and boardData.writeUserId:",
-              loggedInUserId,
-              boardData.writeUserId
-            );
             if (loggedInUserId !== boardData.writeUserId) {
               console.log(
                 "[DEBUG] Role: 산책 알바생 - fetching initial location"
@@ -102,11 +114,6 @@ const KakaoMapComponent = () => {
       window.kakao.maps.load(() => {
         if (boardData) {
           console.log("[DEBUG] boardData available:", boardData);
-          console.log(
-            "[DEBUG] Comparing loggedInUserId and boardData.writeUserId:",
-            loggedInUserId,
-            boardData.writeUserId
-          );
           if (loggedInUserId !== boardData.writeUserId) {
             getInitialLocation();
           } else {
@@ -144,7 +151,7 @@ const KakaoMapComponent = () => {
 
   // 4. userLocation 상태가 설정되면 Kakao 지도 초기화
   useEffect(() => {
-    if (!userLocation) return;
+    if (!userLocation || !mapRef.current) return;
     console.log(
       "[DEBUG] Initializing Kakao Map with userLocation:",
       userLocation
@@ -174,7 +181,7 @@ const KakaoMapComponent = () => {
     });
 
     socketRef.current.on("connect", () => {
-      console.log("[DEBUG] Socket connected:", socketRef.current.id);
+      console.log("[DEBUG] Socket connected:", socketRef.current?.id);
     });
 
     socketRef.current.on("connect_error", (err: any) => {
@@ -189,7 +196,7 @@ const KakaoMapComponent = () => {
 
     if (loggedInUserId === boardData.writeUserId) {
       // 게시물 작성자: 위치 업데이트 이벤트 수신
-      socketRef.current.on("locationUpdate", (location: any) => {
+      socketRef.current.on("locationUpdate", (location: ILocation) => {
         console.log("[DEBUG] Received location update from socket:", location);
         setLocationData((prevLocations) => {
           const updatedLocations = [...prevLocations, location];
@@ -207,7 +214,7 @@ const KakaoMapComponent = () => {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const { latitude, longitude } = position.coords;
-            const newLocation = { latitude, longitude };
+            const newLocation: ILocation = { latitude, longitude };
             console.log("[DEBUG] 산책 알바생 location update:", newLocation);
             setLocationData((prevLocations) => {
               const updatedLocations = [...prevLocations, newLocation];
@@ -249,7 +256,7 @@ const KakaoMapComponent = () => {
   }, [boardData, loggedInUserId]);
 
   // 6. Polyline 업데이트 및 지도 뷰 자동 포커싱
-  const updatePolyline = (locations: any[]) => {
+  const updatePolyline = (locations: ILocation[]) => {
     if (!kakaoMapRef.current || locations.length === 0) return;
 
     const linePath = locations.map(
