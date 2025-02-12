@@ -22,9 +22,11 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
-    domains: [
-      "ko-chock-chock.s3.ap-northeast-2.amazonaws.com",
-      "kmong-s3.s3.ap-northeast-2.amazonaws.com", // ✅ 추가된 도메인
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "kmong-s3.s3.ap-northeast-2.amazonaws.com",
+      },
     ],
   },
 };
