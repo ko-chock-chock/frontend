@@ -1,21 +1,29 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import React, { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import { authenticatedFetch } from "../auth/utils/tokenUtils";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useParams, useRouter } from "next/navigation";
-import { BoardData, ExistingImage, JobFormData } from "./types";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRef } from "react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { jobFormSchema } from ".";
+import { onSubmitProps } from "./types";
+import { useRouter } from "next/navigation";
+
+// 폼 스키마
+export const jobFormSchema = z.object({
+  title: z.string().min(1, "제목을 입력해주세요"),
+  mainRegion: z.string().min(1, "지역을 선택해주세요"),
+  subRegion: z.string().min(1, "세부 지역을 선택해주세요"),
+  price: z
+    .string()
+    .min(1, "금액을 입력해주세요")
+    .regex(/^[0-9,]+$/, "올바른 금액 형식을 입력해주세요"),
+  contents: z.string().min(1, "상세 내용을 입력해주세요"),
+  newImages: z.array(z.instanceof(File)).optional(),
+});
 
 export const useJobBoardNew = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
-  const param = useParams();
-  const [existingImages, setExistingImages] = useState<ExistingImage[]>([]);
-  const [boardData, setBoardData] = useState<BoardData | null>(null);
 
   const {
     control,
@@ -23,7 +31,7 @@ export const useJobBoardNew = () => {
     formState: { errors },
     setValue,
     watch,
-  } = useForm<JobFormData>({
+  } = useForm({
     resolver: zodResolver(jobFormSchema),
     defaultValues: {
       title: "",
@@ -31,17 +39,81 @@ export const useJobBoardNew = () => {
       subRegion: "",
       price: "",
       contents: "",
-      newImages: [],
+      newImages: [] as File[],
     },
   });
 
-  const newImages = watch("newImages") || [];
+  // 엑세스 토큰 가져옴
+  const getAccessToken = (): string | null => {
+    const tokenStorageStr = localStorage.getItem("token-storage");
+    if (!tokenStorageStr) return null;
+    const tokenData = JSON.parse(tokenStorageStr);
+    return tokenData?.accessToken || null;
+  };
+
+  const onSubmit = async (data: onSubmitProps) => {
+    try {
+      const token = getAccessToken();
+      if (!token) throw new Error("로그인이 필요합니다.");
+
+      let imageLinks: string[] = [];
+
+      // 1️. 이미지 업로드 (성공하면 이미지 URL 배열을 받음)
+      if (data.newImages?.length) {
+        const formData = new FormData();
+        data.newImages.forEach((file) => formData.append("files", file));
+
+        const uploadResponse = await fetch(
+          "http://3.36.40.240:8001/api/uploads/multiple",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!uploadResponse.ok) throw new Error("이미지 업로드 실패");
+
+        const uploadResult = await uploadResponse.json();
+        imageLinks = uploadResult;
+      }
+
+      // 2️. 게시글 데이터 구성 (이미지 URL 포함)
+      const payload = {
+        title: data.title,
+        region: `${data.mainRegion} ${data.subRegion}`,
+        price: data.price,
+        contents: data.contents,
+        images: imageLinks,
+      };
+
+      // 3️. 최종 게시글 등록 요청 (이미지 포함)
+      const response = await fetch("http://3.36.40.240:8001/api/trade", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "등록 실패");
+      }
+
+      alert("게시물이 성공적으로 등록되었습니다.");
+      router.push("/jobList");
+    } catch (error) {
+      console.error("요청 에러:", error);
+      alert(error instanceof Error ? error.message : "등록에 실패했습니다.");
+    }
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
       const fileArray = Array.from(files);
-      setValue("newImages", fileArray); // react-hook-form의 setValue 사용
+      setValue("newImages", fileArray, { shouldValidate: true });
     }
   };
 
@@ -51,201 +123,21 @@ export const useJobBoardNew = () => {
     }
   };
 
-  // 기존 이미지 삭제 처리 수정
-  const handleDeleteExistingImage = async (imageId: number) => {
-    try {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        throw new Error("토큰이 없습니다.");
-      }
-
-      const response = await fetch(
-        `https://api.kochokchok.shop/api/v1/boards/image/${imageId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("이미지 삭제에 실패했습니다.");
-      }
-
-      // 성공적으로 삭제되면 상태 업데이트
-      setExistingImages(
-        existingImages.filter((img) => img.image_id !== imageId)
-      );
-    } catch (error) {
-      alert(
-        error instanceof Error ? error.message : "이미지 삭제에 실패했습니다."
-      );
-    }
+  const handleRemoveNewImage = (index: number) => {
+    const newImages = [...(watch("newImages") || [])];
+    newImages.splice(index, 1);
+    setValue("newImages", newImages);
   };
-
-  // 새 이미지 삭제 처리
-  const handleDeleteNewImage = (index: number) => {
-    const updatedImages = [...newImages];
-    updatedImages.splice(index, 1);
-    setValue("newImages", updatedImages);
-  };
-
-  // const onSubmit = async (data: JobFormData) => {
-  //   try {
-  //     const token = localStorage.getItem("accessToken");
-  //     if (!token) {
-  //       throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
-  //     }
-  //     const formData = new FormData();
-  //     formData.append("title", data.title);
-  //     formData.append("price", data.price.replace(/,/g, ""));
-  //     formData.append("contents", data.contents);
-  //     formData.append("status", "구인중");
-  //     formData.append("location", `${data.mainRegion} ${data.subRegion}`);
-
-  //     if (data.newImages) {
-  //       data.newImages.forEach((image) => {
-  //         formData.append("files", image);
-  //       });
-  //     }
-
-  //     const response = await authenticatedFetch(`/api/trade`, {
-  //       method: "POST",
-  //       body: formData,
-  //     });
-
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(errorData.message);
-  //     }
-
-  //     alert("게시물이 성공적으로 등록되었습니다.");
-  //     router.push("/jobList");
-  //   } catch (error) {
-  //     alert(
-  //       error instanceof Error
-  //         ? error.message
-  //         : "등록에 실패했습니다. 다시 시도해주세요."
-  //     );
-  //   }
-  // };
-
-  // const onEdit = async (data: JobFormData) => {
-  //   try {
-  //     const token = localStorage.getItem("accessToken");
-  //     if (!token) {
-  //       throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
-  //     }
-
-  //     const formData = new FormData();
-  //     formData.append("title", data.title);
-  //     formData.append("price", data.price.replace(/,/g, ""));
-  //     formData.append("contents", data.contents);
-  //     formData.append("status", "구인중");
-  //     formData.append("location", `${data.mainRegion} ${data.subRegion}`);
-
-  //     if (data.newImages) {
-  //       data.newImages.forEach((image) => {
-  //         formData.append("files", image);
-  //       });
-  //     }
-
-  //     const response = await fetch(
-  //       `https://api.kochokchok.shop/api/v1/boards/${param.boardId}/edit`,
-  //       {
-  //         method: "PATCH",
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //         body: formData,
-  //         credentials: "include",
-  //       }
-  //     );
-
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(errorData.message);
-  //     }
-
-  //     alert("게시물이 성공적으로 수정되었습니다.");
-  //     router.push(`/jobList/${param.boardId}`);
-  //   } catch (error) {
-  //     alert(
-  //       error instanceof Error
-  //         ? error.message
-  //         : "수정에 실패했습니다. 다시 시도해주세요."
-  //     );
-  //   }
-  // };
-
-  useEffect(() => {
-    const fetchEditData = async () => {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        console.error("토큰이 없습니다. 로그인이 필요합니다.");
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `https://api.kochokchok.shop/api/v1/boards/${param.boardId}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Access-Control-Allow-Headers": "Authorization, Content-Type",
-            },
-            credentials: "include",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`);
-        }
-
-        const responseData = await response.json();
-        const boardData: BoardData = responseData.data;
-        setBoardData(boardData);
-
-        // 폼 데이터 설정
-        setValue("title", boardData.title || "");
-        const [mainRegion, subRegion] = (boardData.location || "").split(" ");
-        setValue("mainRegion", mainRegion || "");
-        setValue("subRegion", subRegion || "");
-        setValue("price", boardData.price?.toString() || "");
-        setValue("contents", boardData.contents || "");
-
-        // 기존 이미지 설정
-        if (boardData.images && Array.isArray(boardData.images)) {
-          setExistingImages(
-            boardData.images.map((img) => ({
-              image_id: img.image_id,
-              image_url: img.image_url,
-              is_thumbnail: img.is_thumbnail,
-            }))
-          );
-        }
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-      }
-    };
-  }, [param.boardId, setValue]);
 
   return {
     control,
-    handleSubmit,
     errors,
+    handleSubmit,
+    onSubmit,
     handleOpenFileDialog,
-    handleFileChange,
-    existingImages,
-
-    handleDeleteExistingImage,
     watch,
-    setValue,
+    handleRemoveNewImage,
     fileInputRef,
-    router,
-    newImages,
+    handleFileChange,
   };
 };

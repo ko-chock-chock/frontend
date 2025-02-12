@@ -1,6 +1,7 @@
 "use client";
 import Button from "@/commons/Button";
-import KakaoMap from "@/components/kakaoMap";
+import KakaoMapComponent from "@/commons/kakaoMap";
+
 import React, { useState, useEffect, useRef } from "react";
 
 const WalkMap = () => {
@@ -46,7 +47,7 @@ const WalkMap = () => {
     <div className="relative w-full h-screen">
       {/* 지도 컨테이너 */}
       <div className="relative w-full h-[calc(100%-150px)]">
-        <KakaoMap />
+        <KakaoMapComponent />
       </div>
 
       {/* 하단 패널 */}
