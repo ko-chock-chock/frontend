@@ -3,13 +3,13 @@
 
 /**
  * 로그인 커스텀 훅
- * 
+ *
  * 주요 기능:
  * 1. 로그인 폼 상태 관리 (react-hook-form + zod)
  * 2. 로그인 API 통신
  * 3. 토큰 관리 (TokenStorage 사용)
  * 4. 사용자 정보 관리 (UserStore 사용)
- * 
+ *
  * 수정사항 (2024.02.04):
  * - TokenStorage를 통한 토큰 관리 일원화
  * - API 응답 타입 정확히 정의
@@ -24,11 +24,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useUserStore } from "@/commons/store/userStore";
 import { TokenStorage } from "../../components/auth/utils/tokenUtils";
-import { 
-  LoginFormData, 
-  LoginResponse, 
+import {
+  LoginFormData,
+  LoginResponse,
   LoginErrorResponse,
-  UserResponse 
+  UserResponse,
 } from "./types";
 
 /**
@@ -68,25 +68,28 @@ export const useLogin = () => {
    * @param userId 사용자 ID
    * @param token 액세스 토큰
    */
-  const fetchUserInfo = async (userId: number, token: string): Promise<UserResponse> => {
+  const fetchUserInfo = async (
+    userId: number,
+    token: string
+  ): Promise<UserResponse> => {
     try {
-      console.log('[Login] 사용자 정보 조회 시작:', { userId });
-      const response = await fetch(`http://3.36.40.240:8001/api/users/${userId}`, {
+      console.log("[Login] 사용자 정보 조회 시작:", { userId });
+      const response = await fetch(`/api/users/${userId}`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
         const errorData: LoginErrorResponse = await response.json();
-        throw new Error(errorData.message || '사용자 정보 조회에 실패했습니다');
+        throw new Error(errorData.message || "사용자 정보 조회에 실패했습니다");
       }
 
       const userInfo: UserResponse = await response.json();
-      console.log('[Login] 사용자 정보 조회 성공:', userInfo);
+      console.log("[Login] 사용자 정보 조회 성공:", userInfo);
       return userInfo;
     } catch (error) {
-      console.error('[Login] 사용자 정보 조회 실패:', error);
+      console.error("[Login] 사용자 정보 조회 실패:", error);
       throw error;
     }
   };
@@ -96,11 +99,11 @@ export const useLogin = () => {
    */
   const extractUserIdFromToken = (token: string): number => {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(token.split(".")[1]));
       return Number(payload.sub);
     } catch (error) {
-      console.error('[Login] 토큰 파싱 실패:', error);
-      throw new Error('토큰 파싱에 실패했습니다');
+      console.error("[Login] 토큰 파싱 실패:", error);
+      throw new Error("토큰 파싱에 실패했습니다");
     }
   };
 
@@ -112,7 +115,7 @@ export const useLogin = () => {
     try {
       // 1. 로그인 API 호출
       console.log("[Login] 로그인 시도:", { email: data.email });
-      const loginResponse = await fetch("http://3.36.40.240:8001/api/users/login", {
+      const loginResponse = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -121,7 +124,7 @@ export const useLogin = () => {
       // 2. 에러 응답 처리
       if (!loginResponse.ok) {
         const errorData: LoginErrorResponse = await loginResponse.json();
-        throw new Error(errorData.message || '로그인에 실패했습니다');
+        throw new Error(errorData.message || "로그인에 실패했습니다");
       }
 
       // 3. 성공 응답 처리
@@ -131,7 +134,7 @@ export const useLogin = () => {
       // 4. 토큰 저장
       TokenStorage.setTokens({
         accessToken: loginResult.accessToken,
-        refreshToken: loginResult.refreshToken
+        refreshToken: loginResult.refreshToken,
       });
 
       // 5. 사용자 ID 추출
@@ -146,16 +149,18 @@ export const useLogin = () => {
         id: userId,
         email: userInfo.email,
         name: userInfo.name || loginResult.name,
-        profileImage: userInfo.profileImage || loginResult.profileImage
+        profileImage: userInfo.profileImage || loginResult.profileImage,
       });
 
       // 8. 홈으로 이동
       router.push("/");
-
     } catch (error) {
       console.error("[Login] 에러 발생:", error);
       form.setError("root", {
-        message: error instanceof Error ? error.message : "로그인 처리 중 오류가 발생했습니다"
+        message:
+          error instanceof Error
+            ? error.message
+            : "로그인 처리 중 오류가 발생했습니다",
       });
     } finally {
       setIsLoading(false);
@@ -171,27 +176,27 @@ export const useLogin = () => {
 
 /**
  * 사용 예시:
- * 
+ *
  * ```tsx
  * function LoginPage() {
  *   const { form, isLoading, onSubmit } = useLogin();
- *   
+ *
  *   return (
  *     <form onSubmit={onSubmit}>
  *       <input {...form.register("email")} />
  *       {form.formState.errors.email && (
  *         <span>{form.formState.errors.email.message}</span>
  *       )}
- *       
+ *
  *       <input type="password" {...form.register("password")} />
  *       {form.formState.errors.password && (
  *         <span>{form.formState.errors.password.message}</span>
  *       )}
- *       
+ *
  *       <button type="submit" disabled={isLoading}>
  *         {isLoading ? "로그인 중..." : "로그인"}
  *       </button>
- *       
+ *
  *       {form.formState.errors.root && (
  *         <div>{form.formState.errors.root.message}</div>
  *       )}

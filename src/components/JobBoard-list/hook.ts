@@ -41,7 +41,7 @@ const useJobBoardList = () => {
       queryParams.append("size", size.toString());
 
       const response = await fetch(
-        `http://3.36.40.240:8001/api/trade/page?${queryParams.toString()}`,
+        `/api/trade/page?${queryParams.toString()}`,
         {
           method: "GET",
           headers: {
