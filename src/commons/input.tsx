@@ -18,7 +18,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     {
       type = "text",
       placeholder = "",
-      value,
+      value = "", //기본값이 undefined로 설정되므로 초기값을 ''빈문자열로 설정 수정함
       onChange,
       className = "",
       error,

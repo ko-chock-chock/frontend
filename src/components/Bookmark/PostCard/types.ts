@@ -1,34 +1,14 @@
 // src/components/Mypage/PostCard/types.ts
 
 /**
-* 게시글 관련 타입 정의
-* 
-* ✨ 주요 기능:
-* 1. API 응답 타입 정의
-*   - 거래 게시글 (TradePost)
-*   - 커뮤니티 게시글 (CommunityPost)
-*   - 후기 게시글 (ReviewPost)
-* 
-* 2. 타입 안정성 보장
-*   - 게시글 상태값 ('TRADING' | 'COMPLETED') 명시
-*   - 타입가드 함수 제공
-*   - API 응답 타입과 UI 표시 타입 분리
-* 
-* 3. 유틸리티 기능 제공
-*   - 상대 시간 표시 (방금 전, n분 전 등)
-*   - 게시글 종류 판별
-* 
-* 🔄 수정사항 (2024.02.11):
-* - ApiTradePost 인터페이스 추가
-* - state 타입 구체화 ('TRADING' | 'COMPLETED')
-* - API 응답 타입과 UI 타입 분리
-*/
-
-
-// ✨ API 응답을 위한 구체적인 state 타입 정의
-export interface ApiTradePost extends Omit<TradePost, 'state'> {
-  state: 'TRADING' | 'COMPLETED';
-}
+ * 게시글 관련 타입 정의
+ * 
+ * 포함 내용:
+ * 1. 게시글 기본 타입 (거래/커뮤니티/후기)
+ * 2. PostCard 컴포넌트 Props
+ * 3. 타입가드 함수
+ * 4. 유틸리티 함수
+ */
 
 /**
  * 거래 게시글 타입 (/api/users/trade-posts 응답)
@@ -50,7 +30,7 @@ export interface ApiTradePost extends Omit<TradePost, 'state'> {
  * @property {string} createdAt - 생성 시간
  * @property {string} updatedAt - 수정 시간
  */
-export interface TradePost {
+export interface WishlistedPost {
   id: number;
   thumbnailImage: string;
   title: string;
@@ -87,7 +67,7 @@ export interface TradePost {
  * @property {string} createdAt - 생성 시간
  * @property {string} updatedAt - 수정 시간
  */
-export interface CommunityPost {
+export interface BookmarkedPost {
   id: number;
   thumbnailImage: string;
   title: string;
@@ -105,43 +85,9 @@ export interface CommunityPost {
 }
 
 /**
- * 후기 게시글 타입 (/api/users/trade-reviews 응답)
- * @property {number} id - 후기 고유 ID
- * @property {string} title - 후기 제목
- * @property {string} contents - 후기 내용
- * @property {string} rating - 평점
- * @property {number} writeUserId - 작성자 ID
- * @property {string} writeUserProfileImage - 작성자 프로필 이미지
- * @property {string} writeUserName - 작성자 이름
- * @property {number} targetUserId - 대상 사용자 ID
- * @property {string} targetUserProfileImage - 대상 사용자 프로필 이미지
- * @property {string} targetUserName - 대상 사용자 이름
- * @property {boolean} isWriteUser - 작성자 여부
- * @property {boolean} isTargetUser - 대상자 여부
- * @property {string} createdAt - 생성 시간
- * @property {string} updatedAt - 수정 시간
- */
-export interface ReviewPost {
-  id: number;
-  title: string;
-  contents: string;
-  rating: string;
-  writeUserId: number;
-  writeUserProfileImage: string;
-  writeUserName: string;
-  targetUserId: number;
-  targetUserProfileImage: string;
-  targetUserName: string;
-  isWriteUser: boolean;
-  isTargetUser: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-/**
  * PostCard에서 사용할 통합 게시글 타입
  */
-export type Post = TradePost | CommunityPost | ReviewPost;
+export type Post = WishlistedPost | BookmarkedPost ;
 
 /**
  * PostCard 컴포넌트 Props 타입
@@ -156,17 +102,15 @@ export interface PostCardProps {
 /**
  * 게시글 종류 구분을 위한 타입가드 함수들
  */
-export const isTradePost = (post: Post): post is TradePost => {
+export const isWishlistedPost = (post: Post): post is WishlistedPost => {
   return 'price' in post;
 };
 
-export const isCommunityPost = (post: Post): post is CommunityPost => {
+export const isBookmarkedPost = (post: Post): post is BookmarkedPost => {
   return 'bookmarkCount' in post;
 };
 
-export const isReviewPost = (post: Post): post is ReviewPost => {
-  return 'rating' in post;
-};
+
 
 /**
  * 시간 표시 유틸리티 함수

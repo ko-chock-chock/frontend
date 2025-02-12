@@ -25,7 +25,7 @@ export default function BottomNavBar() {
     
     {
       label: "찜",
-      path: "/bookMark",
+      path: "/bookmark",
       icon: "/icons/nav/nav_bookmark_unselected_icon.svg",
       activeIcon: "/icons/nav/nav_bookmark_selected_icon.svg",
     },
