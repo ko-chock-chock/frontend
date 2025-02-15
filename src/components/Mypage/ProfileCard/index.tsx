@@ -46,20 +46,20 @@ export default function ProfileCard({ onEditClick }: ProfileCardProps) {
     };
   }, [user]);
 
-  /**
-   * 이미지 로드 에러 핸들러
-   */
-  const handleImageError = (
-    e: React.SyntheticEvent<HTMLImageElement, Event>
-  ) => {
-    const target = e.target as HTMLImageElement;
-    target.src = PROFILE_CONSTANTS.DEFAULT_IMAGE;
+  // /**
+  //  * 이미지 로드 에러 핸들러
+  //  */
+  // const handleImageError = (
+  //   e: React.SyntheticEvent<HTMLImageElement, Event>
+  // ) => {
+  //   const target = e.target as HTMLImageElement;
+  //   target.src = PROFILE_CONSTANTS.DEFAULT_IMAGE;
 
-    // 개발 환경에서만 로깅
-    if (process.env.NODE_ENV === "development") {
-      console.warn("프로필 이미지 로드 실패 - 기본 이미지로 대체됨");
-    }
-  };
+  //   // 개발 환경에서만 로깅
+  //   if (process.env.NODE_ENV === "development") {
+  //     console.warn("프로필 이미지 로드 실패 - 기본 이미지로 대체됨");
+  //   }
+  // };
 
   return (
     <div className="w-full bg-mypage-profile-card rounded-xl">
@@ -68,21 +68,13 @@ export default function ProfileCard({ onEditClick }: ProfileCardProps) {
         {/* 프로필 이미지와 닉네임 */}
         <div className="flex items-center gap-3">
           {/* 프로필 이미지 */}
-          <div
-            className="relative w-12 h-12"
-            role="img"
-            aria-label={`${userInfo.name}의 프로필 사진`}
-          >
+          <div className="relative w-12 h-12 rounded-full overflow-hidden">
             <Image
-              src={userInfo.profileImage}
+              src={userInfo.profileImage || PROFILE_CONSTANTS.DEFAULT_IMAGE}
               alt={`${userInfo.name} 프로필 사진`}
-              width={PROFILE_CONSTANTS.IMAGE_SIZE}
-              height={PROFILE_CONSTANTS.IMAGE_SIZE}
-              className={`rounded-[2rem] object-cover ${
-                userInfo.isDefaultProfile ? "bg-black/20" : ""
-              }`}
-              onError={handleImageError}
-              priority // LCP 최적화
+              fill // 🔑 중요: fill 속성 추가
+              className="object-cover" // object-cover 유지
+              priority
             />
           </div>
 

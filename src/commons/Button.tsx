@@ -86,7 +86,7 @@ export default function Button({
   const designStyles = {
     design1: `
      flex justify-center items-center
-     h-12 px-5 py-4
+     h-12 py-4
      text-base-bold
      rounded-xl
      ${

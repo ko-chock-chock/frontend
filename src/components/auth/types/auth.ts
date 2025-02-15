@@ -14,8 +14,7 @@ export interface ApiResponse<T> {
 }
 
 /**
- * 로그인 폼 데이터 타입
- * @description login/page.tsx에서 사용
+ * 로그인 폼 데이터 타입 
  */
 export interface LoginFormData {
   mail: string;
@@ -24,7 +23,6 @@ export interface LoginFormData {
 
 /**
  * 회원가입 폼 데이터 타입
- * @description signup/page.tsx에서 사용
  */
 export interface SignupFormData {
   mail: string;
@@ -35,7 +33,6 @@ export interface SignupFormData {
 
 /**
  * 사용자 프로필 타입
- * @description userStore.ts, ProfileCard.tsx에서 사용
  */
 export interface UserProfile {
   user_id: string;
@@ -46,17 +43,15 @@ export interface UserProfile {
 
 /**
  * JWT 토큰 응답 타입
- * @description login/page.tsx에서 API 응답 처리에 사용
  */
 export interface AuthResponse {
   accessToken: string;
-  refreshToken: string;  // 추가
+  refreshToken: string;
   message?: string;
 }
 
 /**
  * 권한 체크 결과 타입
- * @description 게시글 수정 등 권한 검증이 필요한 곳에서 사용
  */
 export interface AuthCheckResult {
   isAuthenticated: boolean;
@@ -66,10 +61,94 @@ export interface AuthCheckResult {
 
 /**
  * 리소스 권한 체크용 타입
- * @description 게시글 수정 등에서 사용되는 권한 체크 데이터 구조
  */
 export interface AuthorizedResource {
-  userId: string;      // 리소스 소유자 ID
-  resourceType: 'post';  // 현재는 post만 사용
-  resourceId: string;  // 리소스 ID
+  userId: string;
+  resourceType: 'post' | 'community' | 'comment' | 'reply';
+  resourceId: string;
+}
+
+/**
+ * 거래 게시글 수정 요청 데이터 타입
+ */
+export interface TradeUpdateRequest {
+  title: string;
+  region: string;
+  price: number;
+  contents: string;
+  images: string[];
+}
+
+/**
+ * 거래 게시글 응답 데이터 타입
+ */
+export interface TradeResponseData {
+  message: string;
+  data: TradeData | null;
+}
+
+/**
+ * 거래 게시글 데이터 타입
+ */
+export interface TradeData {
+  userId: number;
+  title: string;
+  region: string;
+  price: number;
+  contents: string;
+  images: string[];
+}
+
+/**
+ * 커뮤니티 게시글 응답 데이터 타입
+ */
+export interface CommunityResponseData {
+  message: string;
+  data: CommunityData | null;
+}
+
+/**
+ * 커뮤니티 게시글 데이터 타입
+ */
+export interface CommunityData {
+  userId: number;
+  title: string;
+  contents: string;
+  images: string[];
+}
+
+/**
+ * 댓글 응답 데이터 타입
+ */
+export interface CommentResponseData {
+  message: string;
+  data: CommentData | null;
+}
+
+/**
+ * 댓글 데이터 타입
+ */
+export interface CommentData {
+  id: number;
+  userId: number;
+  content: string;
+  createdAt: string;
+}
+
+/**
+ * 리플 응답 데이터 타입
+ */
+export interface ReplyResponseData {
+  message: string;
+  data: ReplyData | null;
+}
+
+/**
+ * 리플 데이터 타입
+ */
+export interface ReplyData {
+  id: number;
+  userId: number;
+  content: string;
+  createdAt: string;
 }

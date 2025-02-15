@@ -92,7 +92,7 @@ export const useUserStore = create<UserState>()(
         try {
           console.log("[UserStore] 사용자 정보 조회 시작:", currentUser.id);
           const response = await fetch(
-            `http://13.209.11.201:8001/api/users/${currentUser.id}`,
+            `/api/users/${currentUser.id}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -114,9 +114,9 @@ export const useUserStore = create<UserState>()(
     }),
     {
       name: "user-storage",
-      partialize: (state) => ({
-        user: state.user,
-      }),
+      partialize: (state: UserState): Partial<UserState> => ({
+  user: state.user,
+}),
     }
   )
 );
