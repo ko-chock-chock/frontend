@@ -212,16 +212,15 @@ export default function ProfileEdit() {
                     onError={handleImageError}
                     className="rounded-full object-cover"
                   />
-                  {(user?.profileImage || tempImageUrl) && (
-                    <div className="absolute right-0 bottom-0 w-7 h-7 flex items-center justify-center">
-                      <Image
-                        src={CameraIcon}
-                        alt="카메라 아이콘"
-                        width={28}
-                        height={28}
-                      />
-                    </div>
-                  )}
+                  {/* 조건문 제거하여 항상 카메라 아이콘이 표시되도록 함 */}
+                  <div className="absolute right-0 bottom-0 w-7 h-7 flex items-center justify-center">
+                    <Image
+                      src={CameraIcon}
+                      alt="카메라 아이콘"
+                      width={28}
+                      height={28}
+                    />
+                  </div>
                 </button>
                 <input
                   ref={fileInputRef}
