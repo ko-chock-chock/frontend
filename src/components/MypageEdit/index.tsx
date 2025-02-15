@@ -254,7 +254,7 @@ export default function ProfileEdit() {
               <Button
                 design="design1"
                 width="fit" // 내용물 크기에 맞춤
-                className="w-1/3 px-1" // 명시적 너비 지정
+                className="w-[40%]" // 명시적 너비 지정
                 onClick={saveChanges}
                 disabled={isLoading}
               >
