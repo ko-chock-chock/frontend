@@ -41,7 +41,6 @@ import { z } from "zod";
 import { 
   SignUpFormData, 
   FeedbackMessage,
-  // 🎯 필요한 타입들 추가 import
   SignUpRequestData,
   SignUpResponse,
   SignUpErrorResponse,
@@ -50,7 +49,7 @@ import {
 } from "./types";
 
 // ✨ API 기본 설정
-const API_BASE_URL = 'http://3.36.40.240:8001';
+// const API_BASE_URL = 'http://3.36.40.240:8001';
 
 /**
  * ✨ 회원가입 폼 유효성 검사 스키마
@@ -194,7 +193,7 @@ export const useSignUp = () => {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/api/users/check-email?email=${encodeURIComponent(email)}`
+        `/api/users/check-email?email=${encodeURIComponent(email)}`
       );
 
       const isDuplicate = await validateApiResponse<boolean>(response);
@@ -233,7 +232,7 @@ export const useSignUp = () => {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/api/users/check-name?name=${encodeURIComponent(name)}`
+        `/api/users/check-name?name=${encodeURIComponent(name)}`
       );
 
       const isDuplicate = await validateApiResponse<boolean>(response);
@@ -318,7 +317,7 @@ export const useSignUp = () => {
         confirmPassword: formData.passwordConfirm
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/users/signup`, {
+      const response = await fetch(`/api/users/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
