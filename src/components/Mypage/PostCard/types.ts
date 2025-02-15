@@ -151,6 +151,7 @@ export type Post = TradePost | CommunityPost | ReviewPost;
 export interface PostCardProps {
   post: Post;
   onPostClick: (id: number) => void;
+  onMoreClick?: (post: Post) => void;  // 선택적 속성 추가
 }
 
 /**
