@@ -19,23 +19,23 @@
 import { AuthResponse, AuthCheckResult } from "../types/auth";
 import { useUserStore } from "../../../commons/store/userStore";
 
-// API 설정
-const API_BASE_URL = "http://3.36.40.240:8001";
-const API_CONFIG = {
-  AUTH: {
-    SIGNUP: "/api/users/signup",
-    LOGIN: "/api/users/login",
-    REFRESH: "/api/users/refresh-token",
-  },
-  USER: {
-    DELETE: "/api/users",
-    UPDATE: {
-      PROFILE_IMAGE: "/api/users/profile-image",
-      PASSWORD: "/api/users/password",
-      NAME: "/api/users/name",
-    },
-  },
-};
+// // API 설정
+// const API_BASE_URL = "http://3.36.40.240:8001";
+// const API_CONFIG = {
+//   AUTH: {
+//     SIGNUP: "/api/users/signup",
+//     LOGIN: "/api/users/login",
+//     REFRESH: "/api/users/refresh-token",
+//   },
+//   USER: {
+//     DELETE: "/api/users",
+//     UPDATE: {
+//       PROFILE_IMAGE: "/api/users/profile-image",
+//       PASSWORD: "/api/users/password",
+//       NAME: "/api/users/name",
+//     },
+//   },
+// };
 
 /**
  * 토큰 데이터 인터페이스
@@ -188,7 +188,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
     }
 
     const response = await fetch(
-      `${API_BASE_URL}/api/users/refresh-token?refreshToken=${tokens.refreshToken}`,
+      `/api/users/refresh-token?refreshToken=${tokens.refreshToken}`,
       {
         method: "GET",
         headers: {
@@ -324,7 +324,7 @@ export const authenticatedFetch = async (
     };
 
     // credentials: 'include' 제거하여 CORS 이슈 해결
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+    const response = await fetch(`${url}`, {
       ...options,
       headers,
     });

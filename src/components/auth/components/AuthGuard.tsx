@@ -2,19 +2,32 @@
 
 /**
  * AuthGuard 컴포넌트
- * 페이지 접근 권한을 관리하고 인증 상태를 검증하는 컴포넌트
- *
+ * 페이지와 컴포넌트의 접근 권한을 관리하는 보안 컴포넌트
+ * 
  * 주요 기능:
- * 1. 페이지별 인증 상태 검증
- * 2. 권한 없는 접근 차단
- * 3. 로딩 상태 관리
- * 4. 조건부 리다이렉션
- *
- * 수정사항 (2024-02-04):
- * 1. 인증 체크 로직 최적화
- * 2. 메모리 누수 방지를 위한 cleanup 함수 추가
- * 3. 디버깅 로그 개선
- * 4. 권한 체크 로직 강화
+ * 1. 페이지별 인증 상태 실시간 검증
+ *    - 로그인 필요 여부 확인
+ *    - 토큰 유효성 검사
+ * 2. 리소스별 접근 권한 관리
+ *    - 게시글 수정/삭제 권한
+ *    - 프로필 접근 권한
+ * 3. 조건부 리다이렉션
+ *    - 인증 실패 시 로그인 페이지 이동
+ *    - 권한 없는 리소스 접근 시 홈 이동
+ * 4. 로딩 상태 관리
+ *    - 인증 체크 중 로딩 표시
+ *    - 커스텀 로딩 컴포넌트 지원
+ * 
+ * 사용 예시:
+ * <AuthGuard requireAuth>
+ *   <ProtectedPage />
+ * </AuthGuard>
+ * 
+ * 수정사항 (2024-02-15):
+ * - useEffect 의존성 배열 최적화
+ * - 메모리 누수 방지 로직 강화
+ * - 디버깅 로그 개선
+ * - 타입 안정성 강화
  */
 
 import { useEffect, useState, ReactNode } from "react";
@@ -23,13 +36,14 @@ import { useUserStore } from "@/commons/store/userStore";
 import { checkAuthStatus } from "../utils/tokenUtils";
 import type { AuthorizedResource } from "../types/auth";
 
+// Props 인터페이스 정의
 interface AuthGuardProps {
-  children: ReactNode; // 보호할 컴포넌트/페이지
-  resource?: AuthorizedResource; // 권한 체크가 필요한 리소스
-  requireAuth?: boolean; // 인증 필요 여부
-  fallback?: ReactNode; // 권한 없을 때 표시할 컴포넌트
-  redirectTo?: string; // 리다이렉트 경로
-  loadingComponent?: ReactNode; // 로딩 중 표시할 컴포넌트
+  children: ReactNode;                 // 보호할 컴포넌트/페이지
+  resource?: AuthorizedResource;       // 권한 체크가 필요한 리소스 정보
+  requireAuth?: boolean;              // 인증 필요 여부 (기본값: true)
+  fallback?: ReactNode;               // 권한 없을 때 표시할 컴포넌트
+  redirectTo?: string;                // 리다이렉트 경로 (기본값: /login)
+  loadingComponent?: ReactNode;       // 로딩 중 표시할 컴포넌트
 }
 
 export const AuthGuard = ({
@@ -69,15 +83,18 @@ export const AuthGuard = ({
           timestamp: new Date().toISOString(),
         });
 
+        // 3. 인증 실패 시 처리
         if (!authResult.isAuthenticated) {
           console.log("[AuthGuard] 인증 실패. 리다이렉트:", redirectTo);
           if (isMounted) {
+            setIsLoading(false);
+            setIsAuthorized(false);
             router.push(redirectTo);
           }
           return;
         }
 
-        // 3. 리소스 접근 권한 체크
+        // 4. 리소스 접근 권한 체크
         if (resource) {
           const hasResourceAccess = user?.id === Number(resource.userId);
           console.log("[AuthGuard] 리소스 접근 권한 체크:", {
@@ -89,17 +106,17 @@ export const AuthGuard = ({
           if (!hasResourceAccess) {
             console.log("[AuthGuard] 리소스 접근 권한 없음");
             if (isMounted) {
+              setIsAuthorized(false);
+              setIsLoading(false);
               if (!fallback) {
                 router.push("/");
               }
-              setIsAuthorized(false);
-              setIsLoading(false);
             }
             return;
           }
         }
 
-        // 4. 모든 검증 통과
+        // 5. 모든 검증 통과
         if (isMounted) {
           setIsAuthorized(true);
           setIsLoading(false);
@@ -107,6 +124,8 @@ export const AuthGuard = ({
       } catch (error) {
         console.error("[AuthGuard] 인증 체크 중 에러:", error);
         if (isMounted) {
+          setIsLoading(false);
+          setIsAuthorized(false);
           router.push(redirectTo);
         }
       }
@@ -118,7 +137,7 @@ export const AuthGuard = ({
     return () => {
       isMounted = false;
     };
-  }, [requireAuth, redirectTo, resource, router, user?.id]);
+  }, [requireAuth, redirectTo, resource, router, user?.id, fallback]); // fallback 의존성 추가
 
   // 로딩 상태 처리
   if (isLoading) {
