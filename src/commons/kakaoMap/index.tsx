@@ -1,199 +1,298 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
+import { useParams } from "next/navigation";
+import React, { useEffect, useState, useRef } from "react";
+import { io, Socket } from "socket.io-client";
+import { useUserStore } from "../store/userStore";
 
-import { useEffect, useRef } from "react";
+// 위치 정보를 나타내는 인터페이스
+interface ILocation {
+  latitude: number;
+  longitude: number;
+}
 
+// API에서 받아오는 게시물 데이터 인터페이스 (필요에 따라 확장 가능)
+interface IBoardData {
+  writeUserId: number;
+}
+
+// Kakao Map SDK에 대한 타입 선언 (간단히 any로 처리)
 declare global {
   interface Window {
     kakao: any;
   }
 }
 
-const KAKAO_MAP_SCRIPT_ID = "kakao-map-script";
-const KAKAO_MAP_URL = "https://dapi.kakao.com/v2/maps/sdk.js";
-const apiKey = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
-
-const KakaoMap = () => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<any>(null);
+const KakaoMapComponent: React.FC = () => {
+  const { boardId } = useParams() as { boardId: string };
+  const [boardData, setBoardData] = useState<IBoardData | null>(null);
+  const [locationData, setLocationData] = useState<ILocation[]>([]);
+  const [userLocation, setUserLocation] = useState<ILocation | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const kakaoMapRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
-  const animationRef = useRef<number | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const appKey = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
 
-  const pathCoords: { lat: number; lng: number }[] = [
-    { lat: 37.537776, lng: 127.140009 },
-    { lat: 37.545539, lng: 127.142906 },
-    { lat: 37.5495, lng: 127.1475 },
-    { lat: 37.5482, lng: 127.149 },
-    { lat: 37.547, lng: 127.1505 },
-    { lat: 37.546453, lng: 127.151675 },
-    { lat: 37.5455, lng: 127.15 },
-    { lat: 37.544, lng: 127.1485 },
-    { lat: 37.543, lng: 127.147 },
-    { lat: 37.542, lng: 127.1455 },
-    { lat: 37.541, lng: 127.144 },
-    { lat: 37.537776, lng: 127.140009 },
-    null, // 테스트용 null 값
-  ].filter(
-    (coord): coord is { lat: number; lng: number } =>
-      coord !== null &&
-      typeof coord.lat === "number" &&
-      typeof coord.lng === "number"
-  );
+  // 토큰 관련 함수 (필요 시 TokenStorage로 대체 가능)
+  const getAccessToken = (): string | null => {
+    const tokenStorageStr = localStorage.getItem("token-storage");
+    if (!tokenStorageStr) return null;
+    const tokenData = JSON.parse(tokenStorageStr);
+    return tokenData?.accessToken || null;
+  };
 
+  // Zustand에서 로그인한 사용자 정보를 가져옴
+  const loggedInUserId = useUserStore((state) => state.user?.id);
+
+  // 1. 게시물 데이터 조회
   useEffect(() => {
-    const loadKakaoMapScript = async () => {
-      const existingScript = document.getElementById(KAKAO_MAP_SCRIPT_ID);
-      if (!existingScript) {
-        return new Promise<void>((resolve, reject) => {
-          const script = document.createElement("script");
-          script.id = KAKAO_MAP_SCRIPT_ID;
-          script.src = `${KAKAO_MAP_URL}?appkey=${apiKey}&libraries=services&autoload=false`;
-          script.async = true;
-          script.onload = () => {
-            if (window.kakao && window.kakao.maps) {
-              window.kakao.maps.load(() => resolve());
-            } else {
-              reject("Kakao maps SDK failed to load");
-            }
-          };
-          script.onerror = () => reject("Failed to load Kakao Maps script");
-          document.head.appendChild(script);
-        });
-      } else if (window.kakao?.maps) {
-        return Promise.resolve();
-      } else {
-        return Promise.reject("Kakao maps SDK not available");
-      }
-    };
+    if (!boardId) {
+      console.error("🚨 boardId 값이 없습니다. API 요청을 중단합니다.");
+      return;
+    }
 
-    const initializeMap = async () => {
+    const token = getAccessToken();
+    const fetchBoardData = async () => {
       try {
-        await loadKakaoMapScript();
+        console.log("[DEBUG] Fetching board data for boardId:", boardId);
+        const response = await fetch(`/api/trade/${boardId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
-        if (!window.kakao?.maps) {
-          console.error("Kakao maps SDK not available");
-          return;
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        if (!mapContainer.current) return;
-
-        const centerCoords = new window.kakao.maps.LatLng(
-          pathCoords[0].lat,
-          pathCoords[0].lng
-        );
-
-        const options = {
-          center: centerCoords,
-          level: 5,
-        };
-
-        mapInstance.current = new window.kakao.maps.Map(
-          mapContainer.current,
-          options
-        );
-
-        polylineRef.current = new window.kakao.maps.Polyline({
-          path: [],
-          strokeWeight: 3,
-          strokeColor: "#1D8B5A",
-          strokeOpacity: 0.8,
-          strokeStyle: "solid",
-        });
-
-        polylineRef.current.setMap(mapInstance.current);
-
-        markerRef.current = new window.kakao.maps.Marker({
-          position: centerCoords,
-          map: mapInstance.current,
-        });
-
-        const animatePolyline = () => {
-          let currentIndex = 0;
-          let progress = 0;
-          let framesPerSegment = 200; // 기본 분할 개수
-
-          const animate = () => {
-            if (currentIndex >= pathCoords.length - 1) {
-              if (animationRef.current) {
-                window.cancelAnimationFrame(animationRef.current);
-              }
-              return;
-            }
-
-            const start = new window.kakao.maps.LatLng(
-              pathCoords[currentIndex].lat,
-              pathCoords[currentIndex].lng
-            );
-            const end = new window.kakao.maps.LatLng(
-              pathCoords[currentIndex + 1].lat,
-              pathCoords[currentIndex + 1].lng
-            );
-
-            // 두 좌표 간 거리 계산
-            const distance = Math.sqrt(
-              Math.pow(end.getLng() - start.getLng(), 2) +
-                Math.pow(end.getLat() - start.getLat(), 2)
-            );
-
-            // 거리 기반으로 프레임 개수 조정 (거리가 크면 더 많은 프레임)
-            framesPerSegment = Math.max(200, Math.ceil(distance * 1000000));
-
-            const dx = (end.getLng() - start.getLng()) / framesPerSegment;
-            const dy = (end.getLat() - start.getLat()) / framesPerSegment;
-
-            progress += 1;
-
-            if (progress <= framesPerSegment) {
-              const newPoint = new window.kakao.maps.LatLng(
-                start.getLat() + dy * progress,
-                start.getLng() + dx * progress
-              );
-
-              const currentPath = [...polylineRef.current.getPath(), newPoint];
-              polylineRef.current.setPath(currentPath);
-              markerRef.current.setPosition(newPoint);
-
-              animationRef.current = requestAnimationFrame(animate);
-            } else {
-              progress = 0;
-              currentIndex++;
-              animationRef.current = requestAnimationFrame(animate);
-            }
-          };
-
-          animate();
-        };
-
-        animatePolyline();
+        const data: IBoardData = await response.json();
+        console.log("[DEBUG] Board data fetched:", data);
+        setBoardData(data);
       } catch (error) {
-        console.error("Error initializing Kakao Map:", error);
+        console.error("[DEBUG] Error fetching board data:", error);
       }
     };
 
-    initializeMap();
+    fetchBoardData();
+  }, [boardId]);
 
+  // 2. Kakao 지도 SDK 로드 및 초기화
+  useEffect(() => {
+    if (!window.kakao) {
+      console.log("[DEBUG] Kakao Maps SDK not found, loading script...");
+      const script = document.createElement("script");
+      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&autoload=false`;
+      document.head.appendChild(script);
+      script.onload = () => {
+        console.log("[DEBUG] Kakao Maps SDK loaded");
+        window.kakao.maps.load(() => {
+          if (boardData) {
+            console.log("[DEBUG] boardData available:", boardData);
+            if (loggedInUserId !== boardData.writeUserId) {
+              console.log(
+                "[DEBUG] Role: 산책 알바생 - fetching initial location"
+              );
+              getInitialLocation();
+            } else {
+              console.log(
+                "[DEBUG] Role: 게시물 작성자 - setting default location"
+              );
+              setUserLocation({ latitude: 37.5665, longitude: 126.978 });
+            }
+          }
+        });
+      };
+    } else {
+      console.log("[DEBUG] Kakao Maps SDK already loaded");
+      window.kakao.maps.load(() => {
+        if (boardData) {
+          console.log("[DEBUG] boardData available:", boardData);
+          if (loggedInUserId !== boardData.writeUserId) {
+            getInitialLocation();
+          } else {
+            setUserLocation({ latitude: 37.5665, longitude: 126.978 });
+          }
+        }
+      });
+    }
+  }, [boardData, loggedInUserId]);
+
+  // 3. 산책 알바생(불일치 사용자)의 초기 위치 설정 (실시간 위치 업데이트 대상)
+  const getInitialLocation = () => {
+    if (!navigator.geolocation) {
+      console.error("Geolocation을 지원하지 않는 브라우저입니다.");
+      setUserLocation({ latitude: 37.5665, longitude: 126.978 });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        console.log(`초기 위치 설정: (${latitude}, ${longitude})`);
+        setUserLocation({ latitude, longitude });
+      },
+      (error) => {
+        console.error("초기 위치 가져오기 실패:", error);
+        setUserLocation({ latitude: 37.5665, longitude: 126.978 });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+      }
+    );
+  };
+
+  // 4. userLocation 상태가 설정되면 Kakao 지도 초기화
+  useEffect(() => {
+    if (!userLocation || !mapRef.current) return;
+    console.log(
+      "[DEBUG] Initializing Kakao Map with userLocation:",
+      userLocation
+    );
+    const container = mapRef.current;
+    const options = {
+      center: new window.kakao.maps.LatLng(
+        userLocation.latitude,
+        userLocation.longitude
+      ),
+      level: 3,
+    };
+    kakaoMapRef.current = new window.kakao.maps.Map(container, options);
+  }, [userLocation]);
+
+  // 5. 소켓 연결 및 역할별 위치 업데이트 처리
+  useEffect(() => {
+    if (!boardData) return;
+
+    // 소켓 연결 생성 (두 역할 모두 연결)
+    socketRef.current = io("http://localhost:5001", {
+      query: { boardId },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    socketRef.current.on("connect", () => {
+      console.log("[DEBUG] Socket connected:", socketRef.current?.id);
+    });
+
+    socketRef.current.on("connect_error", (err: any) => {
+      console.error("[DEBUG] Socket connection error:", err);
+    });
+
+    socketRef.current.on("disconnect", () => {
+      console.log("[DEBUG] Socket disconnected");
+    });
+
+    let interval: NodeJS.Timeout | null = null;
+
+    if (loggedInUserId === boardData.writeUserId) {
+      // 게시물 작성자: 위치 업데이트 이벤트 수신
+      socketRef.current.on("locationUpdate", (location: ILocation) => {
+        console.log("[DEBUG] Received location update from socket:", location);
+        setLocationData((prevLocations) => {
+          const updatedLocations = [...prevLocations, location];
+          updatePolyline(updatedLocations);
+          return updatedLocations;
+        });
+      });
+    } else {
+      // 산책 알바생: 주기적으로 위치 업데이트 전송
+      const updateLocation = () => {
+        if (!navigator.geolocation) {
+          console.error("Geolocation을 지원하지 않는 브라우저입니다.");
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            const newLocation: ILocation = { latitude, longitude };
+            console.log("[DEBUG] 산책 알바생 location update:", newLocation);
+            setLocationData((prevLocations) => {
+              const updatedLocations = [...prevLocations, newLocation];
+              updatePolyline(updatedLocations);
+              return updatedLocations;
+            });
+            if (socketRef.current) {
+              console.log(
+                "[DEBUG] Emitting locationUpdate event via socket:",
+                newLocation
+              );
+              socketRef.current.emit("locationUpdate", newLocation);
+            }
+          },
+          (error) => {
+            console.error("위치 정보 가져오기 실패:", error);
+          },
+          {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 10000,
+          }
+        );
+      };
+
+      // 최초 업데이트 후 주기적 업데이트
+      updateLocation();
+      interval = setInterval(updateLocation, 10000);
+    }
+
+    // 컴포넌트 언마운트 또는 boardData 변경 시 소켓 및 interval 정리
     return () => {
-      const script = document.getElementById(KAKAO_MAP_SCRIPT_ID);
-      if (script) script.remove();
-      mapInstance.current = null;
-      polylineRef.current = null;
-      if (animationRef.current) {
-        window.cancelAnimationFrame(animationRef.current);
+      if (interval) clearInterval(interval);
+      if (socketRef.current) {
+        console.log("[DEBUG] Disconnecting socket...");
+        socketRef.current.disconnect();
       }
     };
-  }, []);
+  }, [boardData, loggedInUserId]);
+
+  // 6. Polyline 업데이트 및 지도 뷰 자동 포커싱
+  const updatePolyline = (locations: ILocation[]) => {
+    if (!kakaoMapRef.current || locations.length === 0) return;
+
+    const linePath = locations.map(
+      (loc) => new window.kakao.maps.LatLng(loc.latitude, loc.longitude)
+    );
+
+    if (polylineRef.current) {
+      polylineRef.current.setMap(null);
+    }
+
+    const polyline = new window.kakao.maps.Polyline({
+      map: kakaoMapRef.current,
+      path: linePath,
+      strokeWeight: 10,
+      strokeColor: "#FF0000",
+      strokeOpacity: 0.7,
+      strokeStyle: "solid",
+    });
+
+    polylineRef.current = polyline;
+
+    const bounds = new window.kakao.maps.LatLngBounds();
+    linePath.forEach((latLng) => bounds.extend(latLng));
+    kakaoMapRef.current.setBounds(bounds);
+  };
 
   return (
-    <div
-      ref={mapContainer}
-      style={{
-        width: "100%",
-        height: "100vh",
-        minHeight: "400px",
-      }}
-    />
+    <div>
+      {!userLocation ? (
+        <p>⏳ 위치를 불러오는 중...</p>
+      ) : (
+        <div
+          id="map"
+          ref={mapRef}
+          style={{ width: "100%", height: "1000px" }}
+        ></div>
+      )}
+    </div>
   );
 };
 
-export default KakaoMap;
+export default KakaoMapComponent;

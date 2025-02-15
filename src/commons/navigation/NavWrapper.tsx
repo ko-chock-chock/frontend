@@ -1,96 +1,262 @@
 // src/commons/navigation/NavWrapper.tsx
 "use client";
 
+/**
+ * NavigationWrapper 컴포넌트
+ * 애플리케이션의 전체 네비게이션 및 레이아웃을 관리
+ *
+ * 주요 기능:
+ * 1. 페이지별 네비게이션 표시 여부 관리
+ * 2. 인증이 필요한 페이지 보호
+ * 3. 동적 페이지 타이틀 관리
+ * 4. 레이아웃 구조 제공
+ *
+ * 수정사항 (2024.02.04):
+ * - 인증 로직 최적화
+ * - 라우팅 보안 강화
+ * - 메모리 누수 방지
+ */
+
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useUserStore } from "../../commons/store/userStore";
+import { AuthGuard } from "@/components/auth/components/AuthGuard";
 import TopNavBar from "@/commons/navigation/TopNavBar";
 import BottomNavBar from "@/commons/navigation/BottomNavBar";
+import { TokenStorage } from "@/components/auth/utils/tokenUtils";
 
-// 네비게이션 타입 정의 추가
-export type NavType = "default" | "onlyBack";
-// 페이지 경로 타입 정의
-// 앱에서 사용되는 모든 라우트 경로를 타입으로 지정
-export type PagePath =
-  | "/"
-  | "/mypage"
-  | "/chatList"
-  | "/bookMark"
-  | "/jobList"
-  | "/jobList/new"
-  | "/jobList/jobDetail"
-  | "/login"
-  | "/signup"
-  | "/mypage/edit";
+// 네비게이션 타입 정의
+export type NavType = "onlyBack" | "onlyTitle" | "default";
 
-// 네비게이션 설정 객체
-const navigationConfig = {
-  // 네비게이션 타입 설정 추가
+// 네비게이션 설정 인터페이스
+interface NavigationConfig {
+  navType: Partial<Record<string, NavType>>;
+  hideTopNav: string[];
+  hideBottomNav: string[];
+  defaultTitles: Record<string, string>;
+  publicPages: string[];
+  requiresAuth: string[];
+}
+
+/**
+ * 동적 라우트 패턴 매칭
+ * 예: /jobList/123 -> /jobList/[boardId]
+ */
+const matchDynamicRoute = (pathname: string): string => {
+  // 로그 확인
+  // console.log("Current pathname:", pathname); // 현재 경로 확인
+
+  const patterns = [
+    { regex: /^\/jobList\/\d+$/, replacement: "/jobList/[boardId]" },
+    { regex: /^\/chatList\/\d+$/, replacement: "/chatList/[chatId]" },
+    {
+      regex: /^\/communityBoard\/\d+$/,
+      replacement: "/communityBoard/[boardId]",
+    },
+  ];
+
+  for (const { regex, replacement } of patterns) {
+    if (regex.test(pathname)) {
+      return replacement;
+    }
+  }
+
+  return pathname;
+};
+
+/**
+ * 게시글 정보 조회
+ */
+const fetchBoardData = async (boardId: string) => {
+  try {
+    const token = TokenStorage.getAccessToken();
+    if (!token) {
+      console.log("[NavWrapper] 토큰 없음, 게시글 조회 불가");
+      return null;
+    }
+
+    const response = await fetch(
+      `http://3.36.40.240:8001/api/trade/${boardId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("게시글 조회 실패");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("[NavWrapper] 게시글 조회 실패:", error);
+    return null;
+  }
+};
+
+// 네비게이션 설정
+const navigationConfig: NavigationConfig = {
+  // 페이지별 네비게이션 타입
   navType: {
-    "/": "onlyBack", // 홈에서는 뒤로가기만 표시
-    "/jobList/jobDetail": "onlyBack", // 게시글 작성 페이지도 뒤로가기만 표시
-    // 나머지 페이지는 기본 스타일
-  } as Partial<Record<PagePath, NavType>>, // Partial 추가로 모든 경로를 정의하지 않아도 됨
+    "/jobList/[boardId]": "onlyBack",
+    "/chatList/[chatId]": "onlyBack",
+    "/jobList": "onlyTitle",
+    "/chatList": "onlyTitle",
+    "/": "onlyTitle",
+    "/bookmark": "onlyTitle",
+    "/mypage": "onlyTitle",
 
-  // 상단 네비게이션 바를 숨길 페이지 목록
-  hideTopNav: ["/login",],
+  },
 
-  // 하단 네비게이션 바를 숨길 페이지 목록
-  hideBottomNav: ["/login", "/signup", "/mypage/edit", "/jobList/jobDetail"],
+  // 인증이 필요한 페이지 목록
+  requiresAuth: [
+    "/mypage",
+    "/bookmark",
+    "/jobList/new",
+    "/jobList/[boardId]/edit",
+    "/chatList",
+    "/chatList/[chatId]",
+    "/communityBoard",
+    "/jobList",
+  ],
 
-  // 타이틀이 필요한 페이지만 정의
-  pageTitles: {
+  // 인증이 필요하지 않은 페이지 목록
+  publicPages: ["/login", "/signup", "/", "/jobList", "/communityBoard"],
+
+  // 상단 네비게이션 숨김 페이지
+  hideTopNav: ["/login"],
+
+  // 하단 네비게이션 숨김 페이지
+  hideBottomNav: [
+    "/login",
+    "/signup",
+    "/mypage/edit",
+    "/jobList/[boardId]",
+    "/chatList/[chatId]",
+    "/map",
+    "/chatList/chatBoxMine",
+  ],
+
+  // 페이지별 기본 타이틀
+  defaultTitles: {
     "/": "홈",
     "/signup": "회원가입",
     "/mypage": "마이페이지",
     "/chatList": "채팅목록",
-    "/bookMark": "찜목록",
-    "/jobList": "게시물 목록",
+    "/bookmark": "관심내역",
+    "/jobList": "구인/중고 게시판",
     "/jobList/new": "게시물 작성",
     "/mypage/edit": "회원정보 수정",
-  } as Partial<Record<PagePath, string>>, // Partial 적용
+    "/communityBoard": "커뮤니티",
+  },
 };
 
-// 네비게이션 래퍼 컴포넌트
-export default function NavigationWrapper({
-  children, // 자식 컴포넌트를 받아옴
-}: {
+interface NavigationWrapperProps {
   children: React.ReactNode;
-}) {
-  // 현재 페이지 경로 가져오기
-  const pathname = usePathname() as PagePath;
-  // 해결방안: 타입 가드 추가
-// const pathname = usePathname();
-// const isValidPagePath = (path: string): path is PagePath => {
-//   return Object.keys(navigationConfig.pageTitles).includes(path);
-// };
+}
 
-  // 상단 네비게이션 바 표시 여부 결정
-  const showTopNav = !navigationConfig.hideTopNav.includes(pathname);
+/**
+ * NavigationWrapper 컴포넌트 구현
+ */
+export default function NavigationWrapper({
+  children,
+}: NavigationWrapperProps) {
+  const pathname = usePathname();
+  const [pageTitle, setPageTitle] = useState<string>("");
+  const currentUser = useUserStore((state) => state.user);
 
-  // 하단 네비게이션 바 표시 여부 결정
-  const showBottomNav = !navigationConfig.hideBottomNav.includes(pathname);
+  // 페이지 타이틀 설정
+  useEffect(() => {
+    let isMounted = true;
 
-  // 현재 페이지의 타이틀 가져오기
-  const pageTitle = navigationConfig.pageTitles[pathname];
+    const setTitle = async () => {
+      try {
+        const matchedRoute = matchDynamicRoute(pathname);
+        
+        //로그
+        // console.log("Matched route:", matchedRoute); // 매칭된 경로 확인
+        // console.log("Nav type:", navigationConfig.navType
+        //   [matchedRoute]); // 해당 경로의 네비게이션 타입 확인
+
+        // 채팅방 타이틀 설정
+        if (matchedRoute === "/chatList/[chatId]") {
+          const boardId = pathname.split("/").pop();
+          if (boardId) {
+            const boardData = await fetchBoardData(boardId);
+            if (boardData && isMounted) {
+              const partnerName =
+                boardData.writeUserName !== currentUser?.name
+                  ? boardData.writeUserName
+                  : "상대방";
+              setPageTitle(partnerName);
+              return;
+            }
+          }
+        }
+
+        // 일반 페이지 타이틀 설정
+        if (isMounted) {
+          setPageTitle(navigationConfig.defaultTitles[matchedRoute] || "");
+        }
+      } catch (error) {
+        console.error("[NavWrapper] 타이틀 설정 중 에러:", error);
+        if (isMounted) {
+          setPageTitle(""); // 에러 시 빈 타이틀
+        }
+      }
+    };
+
+    setTitle();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pathname, currentUser?.name]);
+
+  // 현재 경로에 대한 네비게이션 설정 확인
+  const matchedRoute = matchDynamicRoute(pathname);
+  const showTopNav = !navigationConfig.hideTopNav.includes(matchedRoute);
+  const showBottomNav = !navigationConfig.hideBottomNav.includes(matchedRoute);
+
+  // 인증 필요 여부 확인
+  const requireAuth = navigationConfig.requiresAuth.includes(matchedRoute);
+
+  // 인증이 필요한 페이지는 AuthGuard로 보호
+  const wrappedContent = requireAuth ? (
+    <AuthGuard
+      requireAuth={true}
+      redirectTo="/login"
+      loadingComponent={
+        <div className="flex justify-center items-center h-screen">
+          로딩중...
+        </div>
+      }
+    >
+      {children}
+    </AuthGuard>
+  ) : (
+    children
+  );
 
   return (
-    // 네비게이션 바 표시 여부에 따라 padding 조정
     <div
       className={`min-h-screen ${showTopNav ? "pt-12" : ""} ${
         showBottomNav ? "pb-24" : ""
       }`}
     >
-      {/* 상단 네비게이션 바 조건부 렌더링 */}
+      {/* 상단 네비게이션 */}
       {showTopNav && (
         <TopNavBar
-          title={pageTitle}
-          type={navigationConfig.navType[pathname] || "default"}
-        />
+        title={pageTitle}
+        type={navigationConfig.navType[matchedRoute] || "default"}  // 기본값을 "default"로 변경
+      />
       )}
 
-      {/* 자식 컴포넌트 렌더링 */}
-      {children}
+      {/* 메인 콘텐츠 */}
+      {wrappedContent}
 
-      {/* 하단 네비게이션 바 조건부 렌더링 */}
+      {/* 하단 네비게이션 */}
       {showBottomNav && <BottomNavBar />}
     </div>
   );

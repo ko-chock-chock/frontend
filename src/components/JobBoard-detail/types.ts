@@ -1,27 +1,26 @@
-export interface Image {
-  image_url: string;
-  is_thumbnail: boolean;
-}
-
-export interface User {
-  name: string;
-  profile_image: string;
-}
-
 export interface BoardData {
-  board_id: number;
+  id: number;
+  thumbnailImage: string;
   title: string;
+  region: string;
+  price: number;
   contents: string;
-  price: string;
-  location: string;
-  status: string;
-  created_date: string;
-  updated_date: string;
-  images: Image[];
-  user: User;
+  state: string;
+  images: string[];
+  writeUserId: number;
+  writeUserProfileImage: string;
+  writeUserName: string;
+  likeCount: number;
+  viewCount: number;
+  chatRoomCount: number;
+  isLiked: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
-
-export interface ApiResponse {
-  message: string;
-  data: BoardData;
+export interface CheckLike {
+  id: number;
+}
+export interface CheckLikeBoardParams {
+  checkLike: CheckLike[] | null;
+  boardId: string;
 }

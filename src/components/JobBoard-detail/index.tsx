@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import Image from "next/image";
@@ -5,14 +6,15 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
-import useJobBoardList from "./hook";
+import useJobBoardDetail from "./hook";
 
 const JobBoardDetail = () => {
-  const { images, boardData } = useJobBoardList();
+  const { likeButtonClickHandler, boardData, isLiked } = useJobBoardDetail();
+
   return (
-    <div className="min-h-screen flex flex-col pb-24">
+    <div className="flex flex-col">
       {/* 상단 이미지 */}
-      <div className="relative w-full h-[23.4375rem]">
+      <div className="relative w-full h-[23.4375rem] bg-gray-300">
         <Swiper
           pagination={{
             clickable: true,
@@ -24,7 +26,7 @@ const JobBoardDetail = () => {
           slidesPerView={1}
           spaceBetween={0}
         >
-          {images?.map((url, index) => (
+          {boardData?.images?.map((url, index) => (
             <SwiperSlide key={index}>
               <div className="relative w-full h-full">
                 <Image
@@ -47,19 +49,23 @@ const JobBoardDetail = () => {
         <div className="flex items-start space-x-3 mt-6">
           {/* 프로필사진 */}
           <div className="w-12 h-12 rounded-full bg-gray-300 overflow-hidden">
-            {boardData?.data.user.profile_image && (
-              <img
-                src={boardData.data.user.profile_image}
+            {boardData?.writeUserProfileImage ? (
+              <Image
+                src={boardData?.writeUserProfileImage}
                 alt="Profile"
                 className="w-full h-full object-cover"
+                width={48}
+                height={48}
               />
+            ) : (
+              <div className="w-12 h-12 rounded-full overflow-hidden"></div>
             )}
           </div>
           <div className="flex-1">
             {/* 이름과 아이콘 그룹 */}
             <div className="flex justify-between items-center w-full">
               <div className="text-text-primary font-sm">
-                {boardData?.data.user.name}
+                {boardData?.writeUserName}
               </div>
               <div className="flex space-x-1">
                 <span className="flex items-center">
@@ -69,7 +75,9 @@ const JobBoardDetail = () => {
                     width={24}
                     height={24}
                   />
-                  <span className="text-text-quaternary text-sm ml-1">5</span>
+                  <span className="text-text-quaternary text-sm ml-1">
+                    {boardData?.viewCount}
+                  </span>
                 </span>
                 <span className="flex items-center">
                   <Image
@@ -78,7 +86,9 @@ const JobBoardDetail = () => {
                     width={24}
                     height={24}
                   />
-                  <span className="text-text-quaternary text-sm ml-1">5</span>
+                  <span className="text-text-quaternary text-sm ml-1">
+                    {boardData?.likeCount}
+                  </span>
                 </span>
                 <span className="flex items-center">
                   <Image
@@ -87,40 +97,47 @@ const JobBoardDetail = () => {
                     width={24}
                     height={24}
                   />
-                  <span className="text-text-quaternary text-sm ml-1">5</span>
+                  <span className="text-text-quaternary text-sm ml-1">
+                    {boardData?.chatRoomCount}
+                  </span>
                 </span>
               </div>
             </div>
             <p className="text-text-tertiary text-sm">
-              {boardData?.data?.location} ·{" "}
-              {new Date(
-                boardData?.data?.created_date ?? ""
-              ).toLocaleDateString()}
+              {boardData?.region} ·{" "}
+              {new Date(boardData?.createdAt ?? "").toLocaleDateString()}
             </p>
           </div>
         </div>
 
         {/* 제목 */}
         <h1 className="text-base font-bold text-text-primary mt-6">
-          {boardData?.data?.title}
+          {boardData?.title}
         </h1>
 
         {/* 가격 */}
         <p className="text-jobListPrice text-text-primary mt-1">
-          {Number(boardData?.data?.price).toLocaleString()}원
+          {Number(boardData?.price).toLocaleString()}원
         </p>
 
         {/* 상세 설명 */}
         <p className="text-sm text-text-primary leading-6 mt-4">
-          {boardData?.data?.contents}
+          {boardData?.contents}
         </p>
       </div>
 
       {/* 하단 고정 버튼 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white flex items-center w-full py-5 px-5 rounded-t-[2rem] shadow-[0_-4px_30px_rgba(0,0,0,0.1)] space-x-3">
-        <button className="flex justify-center items-center rounded-xl">
+        <button
+          className="flex justify-center items-center rounded-xl"
+          onClick={likeButtonClickHandler}
+        >
           <Image
-            src="/images/post_detail_like_selected_img_56px.svg"
+            src={
+              isLiked
+                ? "/images/post_detail_like_selected_img_56px.svg"
+                : "/images/post_detail_like_unselected_img_56px.svg"
+            }
             alt="Like"
             width={56}
             height={56}

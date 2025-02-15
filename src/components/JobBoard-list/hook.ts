@@ -1,42 +1,53 @@
-"use client";
-
-import { useState, useEffect, useMemo } from "react";
-import { useInView } from "react-intersection-observer";
-import { Board } from "./types";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Board } from "./types";
 
 const useJobBoardList = () => {
   const router = useRouter();
   const [boards, setBoards] = useState<Board[]>([]);
-  const [page, setPage] = useState<number>(1);
-  const [hasMore, setHasMore] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const [selectedMainRegion, setSelectedMainRegion] = useState<string>("");
   const [selectedSubRegion, setSelectedSubRegion] = useState<string>("");
+  const [keyword] = useState<string>("");
 
-  // useInView 훅
-  const { ref, inView } = useInView({
-    threshold: 0.1,
-  });
+  const [page, setPage] = useState<number>(1);
+  const size = 4;
+  const [hasMore, setHasMore] = useState<boolean>(true);
 
-  const fetchBoards = async (pageNumber: number) => {
+  // 무한 스크롤을 위한 observer ref
+  const observer = useRef<IntersectionObserver>();
+
+  const getAccessToken = (): string | null => {
+    const tokenStorageStr = localStorage.getItem("token-storage");
+    if (!tokenStorageStr) return null;
+    const tokenData = JSON.parse(tokenStorageStr);
+    return tokenData?.accessToken || null;
+  };
+
+  const region = selectedSubRegion
+    ? `${selectedMainRegion} ${selectedSubRegion}`
+    : selectedMainRegion;
+
+  const fetchBoards = async (page: number, keyword: string, region: string) => {
+    const token = getAccessToken();
+    if (!token) throw new Error("로그인이 필요합니다.");
+    setIsLoading(true);
+
     try {
-      setIsLoading(true);
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
-      }
+      const queryParams = new URLSearchParams();
+      if (keyword) queryParams.append("keyword", keyword);
+      if (region) queryParams.append("region", region);
+      queryParams.append("page", page.toString());
+      queryParams.append("size", size.toString());
 
       const response = await fetch(
-        `https://api.kochokchok.shop/api/v1/boards?page=${pageNumber}`,
+        `/api/trade/page?${queryParams.toString()}`,
         {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-          credentials: "include",
         }
       );
 
@@ -44,64 +55,70 @@ const useJobBoardList = () => {
         throw new Error(`API 호출 실패: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const responseData = await response.json();
+      const boardData = responseData.content;
 
-      setBoards((prev) =>
-        pageNumber === 1 ? data.data.data : [...prev, ...data.data.data]
-      );
-
-      // 데이터가 10개 미만이면 더 이상 데이터가 없다고 판단
-      if (data.data.data.length < 10) {
-        setHasMore(false);
+      if (page === 1) {
+        setBoards(boardData);
+      } else {
+        setBoards((prev) => [...prev, ...boardData]);
       }
+
+      setHasMore(boardData.length === size);
     } catch (error) {
-      console.error(error);
+      console.error("fetchBoards 오류:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // 마지막 요소를 관찰하는 콜백 함수
+  const lastBoardElementRef = useCallback(
+    (node: HTMLElement | null) => {
+      if (isLoading) return;
+
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [isLoading, hasMore]
+  );
+
+  // 검색 조건이 변경될 때 초기화
   useEffect(() => {
     setBoards([]);
     setPage(1);
     setHasMore(true);
-    fetchBoards(1); // 초기 데이터 로드
-  }, [selectedMainRegion, selectedSubRegion]);
+    fetchBoards(1, keyword, region);
+  }, [keyword, region]);
 
+  // 페이지가 변경될 때 데이터 fetching
   useEffect(() => {
-    if (inView && hasMore && !isLoading) {
-      fetchBoards(page);
-      setPage((prev) => prev + 1); // 다음 페이지로 이동
+    if (page > 1) {
+      fetchBoards(page, keyword, region);
     }
-  }, [inView, hasMore, isLoading, page]);
+  }, [page]);
 
   const writeButton = () => {
     router.push("/jobList/new");
   };
 
-  const filteredBoards = useMemo(() => {
-    if (!selectedMainRegion) return boards;
-    return boards.filter((board) => {
-      const loc = board.location || "";
-      return (
-        loc.includes(selectedMainRegion) &&
-        (!selectedSubRegion || loc.includes(selectedSubRegion))
-      );
-    });
-  }, [boards, selectedMainRegion, selectedSubRegion]);
-
   return {
+    boards,
+    isLoading,
     selectedMainRegion,
     setSelectedMainRegion,
     selectedSubRegion,
     setSelectedSubRegion,
-    filteredBoards,
-    router,
-    ref,
     writeButton,
-    isLoading,
-    hasMore,
-    boards,
+    router,
+    lastBoardElementRef,
   };
 };
 

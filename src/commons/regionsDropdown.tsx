@@ -1,3 +1,4 @@
+"use client";
 import Image from "next/image";
 import { useState } from "react";
 
@@ -91,17 +92,15 @@ const RegionDropdown: React.FC<RegionDropdownProps> = ({
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showMainRegions, setShowMainRegions] = useState(true);
+  const [tempMainRegion, setTempMainRegion] = useState("");
 
   const currentSubRegions = (() => {
-    if (selectedMainRegion === "전체 보기") {
-      return [];
-    }
-    const found = regions.find((r) => r.name === selectedMainRegion);
+    const found = regions.find((r) => r.name === tempMainRegion);
     return found?.subRegions || [];
   })();
 
   const toggleDropdown = (e: React.MouseEvent) => {
-    e.preventDefault(); // 이벤트 기본 동작 방지
+    e.preventDefault();
     setIsDropdownOpen(!isDropdownOpen);
     if (!isDropdownOpen) {
       setShowMainRegions(true);
@@ -110,22 +109,32 @@ const RegionDropdown: React.FC<RegionDropdownProps> = ({
 
   const handleRegionClick = (regionName: string, e: React.MouseEvent) => {
     e.preventDefault();
+
     if (regionName === "전체 보기") {
-      setSelectedMainRegion("");
-      setSelectedSubRegion("");
-      setIsDropdownOpen(false);
-    } else {
-      setSelectedMainRegion(regionName);
-      setSelectedSubRegion("");
-      setShowMainRegions(false);
+      window.location.reload();
+      return;
     }
+    setTempMainRegion(regionName);
+    setShowMainRegions(false);
   };
 
   const handleSubRegionClick = (subRegionName: string, e: React.MouseEvent) => {
     e.preventDefault();
+    // 실제 최종 선택은 서브 지역을 클릭했을 때만 이루어짐
+    setSelectedMainRegion(tempMainRegion);
     setSelectedSubRegion(subRegionName);
     setIsDropdownOpen(false);
   };
+
+  const selectedRegionText = (() => {
+    if (selectedMainRegion && selectedSubRegion) {
+      return `${selectedMainRegion} ${selectedSubRegion}`;
+    }
+    if (selectedMainRegion) {
+      return selectedMainRegion;
+    }
+    return "지역 선택";
+  })();
 
   return (
     <div className="relative mb-4 flex flex-col items-end gap-[0.625rem] self-stretch">
@@ -135,7 +144,7 @@ const RegionDropdown: React.FC<RegionDropdownProps> = ({
         onClick={toggleDropdown}
       >
         <span className="text-center text-text-secondary font-suit text-[0.875rem] font-sm leading-[1.5] tracking-[-0.021875rem]">
-          {selectedSubRegion || selectedMainRegion || "지역 선택"}
+          {selectedRegionText}
         </span>
         <Image
           src="/icons/post_list_region_dropdown_icon_16px.svg"
@@ -148,6 +157,7 @@ const RegionDropdown: React.FC<RegionDropdownProps> = ({
       {isDropdownOpen && (
         <div className="absolute z-10 mt-2 bg-white border rounded-lg shadow max-h-60 overflow-y-auto">
           {showMainRegions ? (
+            // 메인 지역 목록
             <ul>
               {regions.map((region) => (
                 <li
@@ -160,6 +170,7 @@ const RegionDropdown: React.FC<RegionDropdownProps> = ({
               ))}
             </ul>
           ) : (
+            // 서브 지역 목록
             <ul>
               {currentSubRegions.map((subRegion) => (
                 <li

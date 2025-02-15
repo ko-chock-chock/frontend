@@ -10,6 +10,9 @@ import { ButtonHTMLAttributes } from "react";
  * @property {boolean} disabled - 버튼 비활성화 상태
  *   - true: secondary 색상으로 스타일 변경 및 클릭 불가
  *   - false: primary 색상으로 스타일 적용 및 클릭 가능
+ * @property {boolean} active - design5 전용 활성화 상태 표시
+ *   - true: primary 색상으로 스타일 변경 (탭 활성화 상태)
+ *   - false: secondary 색상으로 스타일 변경 (탭 비활성화 상태)
  * @property {React.ReactNode} children - 버튼 내부 콘텐츠
  * @property {string} className - 추가 스타일 클래스 (optional)
  */
@@ -17,6 +20,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   design?: "design1" | "design2" | "design3" | "design4" | "design5";
   width?: "full" | "fit";
   disabled?: boolean;
+  active?: boolean;
   children: React.ReactNode;
 }
 
@@ -65,15 +69,16 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * - 여백: 12px 좌우 (px-3)
  * - 폰트: 14px Bold (.text-sm-bold) - global.css의 공통 텍스트 스타일 사용
  * - 모서리: 완전한 라운드 (rounded-full)
- * - 기본 스타일: primary 배경(#1B8D5A), 흰색 텍스트
- * - disabled 스타일: secondary 배경(#E9E8E3), secondary 텍스트(#35351E)
- * - 사용: 탭 그룹 버튼 ("게시중", "게시완료", "내커뮤니티")
+ * - active 상태: primary 배경(#1B8D5A), 흰색 텍스트
+ * - 비활성 상태: secondary 배경(#E9E8E3), secondary 텍스트(#35351E)
+ * - 사용: 탭 그룹 버튼 ("게시중", "게시완료", "내 커뮤니티", "받은 후기")
  * - 특징: 고정된 너비로 탭 그룹에서 일관된 모양 유지
  */
 export default function Button({
   design = "design1",
   width = "full",
   disabled = false,
+  active = false,
   children,
   className = "",
   ...props
@@ -81,13 +86,13 @@ export default function Button({
   const designStyles = {
     design1: `
      flex justify-center items-center
-     h-14 px-5 py-4
+     h-12 py-4
      text-base-bold
      rounded-xl
      ${
        disabled
-         ? "bg-button-bg-secondary text-button-text-secondary" /* 비활성화: #E9E8E3 배경, #35351E 텍스트 */
-         : "bg-button-bg-primary text-button-text-primary" /* 활성화: #1B8D5A 배경, #FFFFFF 텍스트 */
+         ? "bg-button-bg-secondary text-button-text-secondary cursor-not-allowed"
+         : "bg-button-bg-primary text-button-text-primary"
      }
    `,
 
@@ -116,16 +121,16 @@ export default function Button({
    `,
 
     design5: `
-     flex justify-center items-center
-     h-8.5 w-[5.625rem]
-     px-3 gap-1
-     text-sm-bold
-     rounded-full
-     ${
-       disabled
-         ? "bg-button-bg-secondary text-button-text-secondary" /* 비활성화: #E9E8E3 배경, #35351E 텍스트 */
-         : "bg-button-bg-primary text-button-text-primary" /* 활성화: #1B8D5A 배경, #FFFFFF 텍스트 */
-     }
+   flex justify-center items-center
+   h-[2.125rem] w-[5rem]
+   gap-1
+   text-sm  
+   rounded-full
+   ${
+     active
+       ? "bg-button-bg-primary text-white"
+       : "bg-button-bg-secondary text-button-text-secondary"
+   }
    `,
   };
 

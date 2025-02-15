@@ -1,39 +1,22 @@
 "use client";
 import { Controller } from "react-hook-form";
-import { z } from "zod";
 import Button from "@/commons/Button";
 import Input from "@/commons/input";
-import Image from "next/image";
 import RegionDropdown from "@/commons/regionsDropdown";
-import { JobListNewProps } from "./types";
+import Image from "next/image";
 import { useJobBoardNew } from "./hook";
 
-// 폼 스키마 수정
-export const jobFormSchema = z.object({
-  title: z.string().min(1, "제목을 입력해주세요"),
-  mainRegion: z.string().min(1, "지역을 선택해주세요"),
-  subRegion: z.string().min(1, "세부 지역을 선택해주세요"),
-  price: z
-    .string()
-    .min(1, "금액을 입력해주세요")
-    .regex(/^[0-9,]+$/, "올바른 금액 형식을 입력해주세요"),
-  contents: z.string().min(1, "상세 내용을 입력해주세요"),
-  newImages: z.array(z.instanceof(File)).optional(),
-});
-
-const JobBoardNew = ({ isEdit }: JobListNewProps) => {
+const JobBoardNew = () => {
   const {
     control,
-    handleSubmit,
     errors,
-    handleOpenFileDialog,
-    handleFileChange,
+    handleSubmit,
     onSubmit,
-    existingImages,
-    handleDeleteExistingImage,
+    handleOpenFileDialog,
     watch,
-    setValue,
+    handleRemoveNewImage,
     fileInputRef,
+    handleFileChange,
   } = useJobBoardNew();
 
   return (
@@ -93,14 +76,27 @@ const JobBoardNew = ({ isEdit }: JobListNewProps) => {
           <Controller
             name="price"
             control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="text"
-                placeholder="₩ 1,000"
-                className="w-full"
-              />
-            )}
+            render={({ field }) => {
+              const displayValue = field.value
+                ? `₩ ${Number(
+                    field.value.replace(/[^0-9]/g, "")
+                  ).toLocaleString()}`
+                : "";
+
+              return (
+                <Input
+                  {...field}
+                  type="text"
+                  placeholder="₩ 1,000"
+                  value={displayValue}
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/[^0-9]/g, "");
+                    field.onChange(rawValue);
+                  }}
+                  className="w-full"
+                />
+              );
+            }}
           />
           {errors.price && (
             <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
@@ -147,30 +143,7 @@ const JobBoardNew = ({ isEdit }: JobListNewProps) => {
               />
             </div>
 
-            {/* 기존 이미지 썸네일 */}
-            {isEdit &&
-              existingImages.map((image) => (
-                <div
-                  key={image.image_id}
-                  className="w-[100px] h-[100px] relative group"
-                >
-                  <Image
-                    src={image.image_url}
-                    alt={`existing-image-${image.image_id}`}
-                    fill
-                    className="object-cover rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteExistingImage(image.image_id)}
-                    className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-
-            {/* 새로 추가된 이미지 썸네일 */}
+            {/* 이미지 선택 후 보여질 이미지 썸네일 */}
             {watch("newImages")?.map((image, index) => (
               <div key={index} className="w-[100px] h-[100px] relative group">
                 <Image
@@ -181,11 +154,7 @@ const JobBoardNew = ({ isEdit }: JobListNewProps) => {
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    const newImages = [...(watch("newImages") || [])];
-                    newImages.splice(index, 1);
-                    setValue("newImages", newImages);
-                  }}
+                  onClick={() => handleRemoveNewImage(index)}
                   className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                 >
                   ×
@@ -210,7 +179,7 @@ const JobBoardNew = ({ isEdit }: JobListNewProps) => {
             width="full"
             className="h-[3.5rem]"
           >
-            {isEdit ? "수정하기" : "등록하기"}
+            {"등록하기"}
           </Button>
         </div>
       </form>
