@@ -22,3 +22,4 @@ export const PROFILE_CONSTANTS = {
   IMAGE_SIZE: 48,
   LOADING_TEXT: "로딩 중..."
 } as const;
+
