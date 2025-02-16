@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 // import localFont from "next/font/local";
 import "./globals.css";
 import  NavigationWrapper  from "@/commons/navigation/NavWrapper";
+import '@/commons/fetch-interceptor';
 
 // const geistSans = localFont({
 //   src: "fonts/GeistVF.woff",
