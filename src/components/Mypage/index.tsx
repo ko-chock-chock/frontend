@@ -3,26 +3,20 @@
 
 /**
  * 마이페이지 컴포넌트
- *
+ * 
  * 주요 기능:
  * 1. 프로필 카드 표시 및 수정 페이지 연결
- * 2. 게시글 상태별 탭 관리 (게시중/거래완료/받은 후기)
+ * 2. 게시글 상태별 탭 관리 (게시중/게시완료/내 커뮤니티/받은 후기)
  * 3. URL 파라미터를 통한 탭 상태 관리
- * 4. 게시글 목록 표시 및 게시글 타입별 상세 페이지 라우팅
- * 5. 로딩 및 에러 상태 처리
- * 6. BottomSheetModal을 통한 게시글 관리 기능 제공
- *
- * 수정사항 (2024.02.15):
- * 1. 상태 변경 로직 수정
- *   - 게시중 -> 게시완료 변경만 가능하도록 변경
- *   - 게시완료 상태에서는 상태 변경 버튼 제거
- * 2. 코드 가독성 개선
- *   - 불필요한 타입 정의 제거
- *   - 명확한 주석 추가
+ * 4. 무한 스크롤을 통한 게시글 목록 표시
+ * 5. 게시글 타입별 상세 페이지 라우팅
+ * 6. 로딩 및 에러 상태 처리
+ * 7. BottomSheetModal을 통한 게시글 관리 기능 제공
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useInView } from "react-intersection-observer";
 import ProfileCard from "./ProfileCard";
 import TabGroup from "./TabGroup";
 import { useMyPosts } from "./hook";
@@ -40,21 +34,46 @@ export default function MypageComponent() {
   const [currentTab, setCurrentTab] = useState<TabType>("게시중");
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // 상태 변경 처리 중 여부
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // 2️⃣ 게시글 데이터 및 상태 관리
+  // 2️⃣ 무한 스크롤 관련 상태 추가
+  const [page, setPage] = useState(1);
+  const POSTS_PER_PAGE = 10;
+
+  const { ref: scrollRef, inView } = useInView({
+    threshold: 0.1,
+  });
+
+  // 3️⃣ 게시글 데이터 및 상태 관리
   const { posts, postCounts, loading, error, refresh } = useMyPosts(currentTab);
 
-  // 3️⃣ 탭 변경 처리
+  const [displayPosts, setDisplayPosts] = useState<Post[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+
+  // 4️⃣ 게시글 페이지네이션 및 무한 스크롤 로직
+  useEffect(() => {
+    const paginatedPosts = posts.slice(0, page * POSTS_PER_PAGE);
+    setDisplayPosts(paginatedPosts);
+    setHasMore(paginatedPosts.length < posts.length);
+  }, [posts, page]);
+
+  useEffect(() => {
+    if (inView && hasMore) {
+      setPage((prev) => prev + 1);
+    }
+  }, [inView, hasMore]);
+
+  // 5️⃣ 탭 변경 처리
   const handleTabChange = (tab: TabType) => {
     setCurrentTab(tab);
+    setPage(1);
     const searchParams = new URLSearchParams(window.location.search);
     searchParams.set("tab", tab);
     const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
     window.history.pushState({}, "", newUrl);
   };
 
-  // 4️⃣ 게시글 클릭 처리
+  // 6️⃣ 게시글 클릭 처리
   const handlePostClick = (id: number, post: Post) => {
     if (isTradePost(post)) {
       router.push(`/jobList/${id}`);
@@ -63,13 +82,13 @@ export default function MypageComponent() {
     }
   };
 
-  // 5️⃣ 더보기 버튼 클릭 처리
+  // 7️⃣ 더보기 버튼 클릭 처리
   const handleMoreClick = (post: Post) => {
     setSelectedPost(post);
     setIsBottomSheetOpen(true);
   };
 
-  // 6️⃣ BottomSheetModal 메뉴 아이템 생성
+  // 8️⃣ BottomSheetModal 메뉴 아이템 생성
   const getBottomSheetMenuItems = (
     post: Post | null,
     currentTab: TabType
@@ -78,7 +97,7 @@ export default function MypageComponent() {
 
     const menuItems: BottomSheetMenuItem[] = [];
 
-    // 7️⃣ 게시중 상태일 때만 상태 변경 버튼 표시
+    // 게시중 상태일 때만 상태 변경 버튼 표시
     if (currentTab === "게시중") {
       const handleStateChange = async (postId: number) => {
         if (isProcessing) return;
@@ -87,7 +106,6 @@ export default function MypageComponent() {
           setIsProcessing(true);
           const token = TokenStorage.getAccessToken();
 
-          // 8️⃣ 상태 변경 API 호출
           const response = await fetch(`/api/trade/${postId}/state`, {
             method: "POST",
             headers: {
@@ -102,7 +120,6 @@ export default function MypageComponent() {
             throw new Error("상태 변경에 실패했습니다");
           }
 
-          // 9️⃣ 성공 시 데이터 갱신 및 UI 업데이트
           await refresh();
           setIsBottomSheetOpen(false);
           alert("게시완료로 변경되었습니다.");
@@ -115,11 +132,10 @@ export default function MypageComponent() {
         }
       };
 
-      // 🔟 상태 변경 버튼 추가
       menuItems.push({
         label: isProcessing ? "처리 중..." : "게시완료로 변경",
         onClick: async () => {
-          if (!isProcessing) {
+          if (!isProcessing && post) {
             await handleStateChange(post.id);
           }
         },
@@ -127,7 +143,7 @@ export default function MypageComponent() {
       });
     }
 
-    // 1️⃣1️⃣ 공통 메뉴 아이템 추가
+    // 공통 메뉴 아이템 추가
     menuItems.push(
       {
         label: "게시글 수정",
@@ -180,7 +196,7 @@ export default function MypageComponent() {
     return menuItems;
   };
 
-  // 1️⃣2️⃣ 컴포넌트 렌더링
+  // 9️⃣ 컴포넌트 렌더링
   return (
     <main className="flex flex-col px-5 min-h-screen bg-background">
       {/* 프로필 카드 섹션 */}
@@ -211,13 +227,13 @@ export default function MypageComponent() {
 
       {/* 게시글 목록 섹션 */}
       <div className="flex-1">
-        {(!posts || posts.length === 0) && (
+        {(!displayPosts || displayPosts.length === 0) && (
           <div className="text-sm-medium text-center py-4">
             게시글이 없습니다.
           </div>
         )}
 
-        {posts.map((post: Post) => (
+        {displayPosts.map((post: Post) => (
           <PostCard
             key={post.id}
             post={post}
@@ -225,6 +241,21 @@ export default function MypageComponent() {
             onMoreClick={handleMoreClick}
           />
         ))}
+
+        {/* 무한 스크롤 감지 요소 */}
+        {hasMore && (
+          <div ref={scrollRef} className="h-10">
+            <div className="text-center py-4 text-gray-500">
+              게시글을 더 불러오는 중...
+            </div>
+          </div>
+        )}
+
+        {!hasMore && displayPosts.length > 0 && (
+          <div className="text-center py-4 text-gray-500">
+            모든 게시글을 불러왔습니다.
+          </div>
+        )}
       </div>
 
       {/* BottomSheetModal */}
