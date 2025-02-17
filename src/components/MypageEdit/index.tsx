@@ -38,7 +38,7 @@ import Modal from "@/commons/Modal";
 import BottomSheetModal from "@/commons/BottomSheetModal";
 import { useProfileEdit } from "./hook";
 
-// 아이콘 imports 👇
+// 아이콘 imports 
 import CheckIcon from "@/../public/icons/signup_check_disabled_icon_24px.svg";
 import CheckValidIcon from "@/../public/icons/signup_check_valid_icon_24px.svg";
 import CollapseIcon from "@/../public/icons/editAccount_collapse_24px.svg";
@@ -238,7 +238,7 @@ export default function ProfileEdit() {
             <label htmlFor="nickname" className="text-sm-bold">
               닉네임
             </label>
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-3">
               {/* 🔑 Input을 감싸는 래퍼 div 추가 */}
               <div className="flex-1">
                 <Input
@@ -331,12 +331,12 @@ export default function ProfileEdit() {
               </div>
 
               {/* 버튼 영역 */}
-              <div className="flex gap-4 mt-4">
+              <div className="flex gap-3 mt-4">
                 <Button
                   design="design2"
                   width="fit" // 🔑 중요: width를 'fit'으로 변경
                   onClick={() => setIsPasswordFormVisible(false)}
-                  className="w-1/4 h-12" // Tailwind로 추가 너비 조정
+                  className="w-[30%] h-12" // Tailwind로 추가 너비 조정
                 >
                   <Image src={ExpandIcon} alt="" width={24} height={24} />
                   <span>취소</span>
