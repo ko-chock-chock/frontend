@@ -3,12 +3,8 @@ import { useEffect, useState } from "react";
 import { BoardData, CheckLike } from "./types";
 import { useParams, useRouter } from "next/navigation";
 import axiosInstance from "@/utils/axiosInstance";
-import { io } from "socket.io-client";
 import axios from "axios";
-// useRouter, io, axiosInstance 추가함.
-
-// ✅ 소켓 서버 연결 (추가됨)
-// const socket = io("http://localhost:5001"); // ✅ 수정됨: 소켓 서버 주소 설정
+// useRouter, axiosInstance 추가함.
 
 const useJobBoardDetail = () => {
   const { boardId } = useParams<{ boardId: string }>();

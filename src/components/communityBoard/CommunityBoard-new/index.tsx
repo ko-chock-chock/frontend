@@ -81,16 +81,13 @@ const CommunityBoardNew = () => {
 
       console.log("📸 전송할 이미지 파일:", formData.getAll("files"));
 
-      const response = await fetch(
-        "http://3.36.40.240:8001/api/uploads/multiple",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch("/api/uploads/multiple", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
       console.log("✅ 이미지 업로드 완료! 응답 상태 코드:", response.status);
 
@@ -156,7 +153,7 @@ const CommunityBoardNew = () => {
 
       console.log("📨 전송할 데이터:", payload);
 
-      const response = await fetch("http://3.36.40.240:8001/api/community", {
+      const response = await fetch("/api/community", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

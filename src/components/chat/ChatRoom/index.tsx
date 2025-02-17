@@ -1,18 +1,21 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { io } from "socket.io-client";
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
+// import { io } from "socket.io-client";
 import Image from "next/image";
 import Button from "@/commons/Button";
 import { useRouter, useSearchParams } from "next/navigation";
 import Input from "@/commons/input";
+import { useUserStore } from "@/commons/store/userStore";
 
 interface Message {
   type: string; // 메시지 타입 ('text' 또는 'system')
   text?: string; // 일반 메시지 내용
   time: string; // 시간
   sender: string; // 발신자
-  senderId: string; // 발신자ID
+  senderId: number; // 발신자ID
   content?: { title: string; subtitle: string }; // 시스템 메시지의 추가 내용
 }
 
@@ -25,75 +28,63 @@ export default function ChatRoom() {
   const inputRef = useRef<HTMLInputElement>(null); // 입력 필드 DOM에 접근하기 위한 ref
   const messagesEndRef = useRef<HTMLDivElement>(null); // 채팅 메시지 목록의 끝을 참조하는 ref
   const router = useRouter(); // useRouter 훅 사용
-  const socket = io("ws://3.36.40.240:8001", {
-    transports: ["websocket", "polling"],
-    reconnection: true,
-    reconnectionAttempts: 5,
-    reconnectionDelay: 3000,
-  });
+  // const socket = io("ws://3.36.40.240:8001/socket.io", {
+  //   transports: ["websocket", "polling"], // polling 추가
+  //   reconnection: true, // 자동 재연결
+  //   reconnectionAttempts: 5, // 최대 5번 재시도
+  //   reconnectionDelay: 3000, // 3초 후 재시도
+  // });
   const searchParams = useSearchParams();
   const roomId = searchParams.get("roomId"); // ✅ URL에서 roomId 가져오기
+  const title = searchParams.get("title");
+  const price = searchParams.get("price");
+  const imageUrl = searchParams.get("imageUrl");
+  const tradeUserId = searchParams.get("tradeUserId") || ""; // 🔥 게시물 ID 추가
+  const user = useUserStore((state) => state.user); // 로그인한 유저정보 가져옴
 
-  socket.on("connect", () => {
-    console.log("✅ 소켓 서버 연결 성공!");
-  });
-
-  socket.on("connect_error", (error) => {
-    console.error("🚨 소켓 연결 오류 발생:", error);
-  });
-
-  socket.on("disconnect", (reason) => {
-    console.warn("⚠️ 소켓 연결이 끊어졌습니다:", reason);
-  });
+  const socketUrl = "http://localhost:8001/ws";
+  const stompClientRef = useRef<Client | null>(null);
 
   useEffect(() => {
-    scrollToBottom(); // messages 상태가 변경될 때마다 실행
-  }, [messages]);
+    const socket = new SockJS(socketUrl);
+    const stompClient = new Client({
+      webSocketFactory: () => socket,
+      reconnectDelay: 5000, // 자동 재연결 (5초마다 시도)
+      onConnect: () => {
+        console.log("✅ WebSocket 연결됨");
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); // 채팅창 스크롤을 가장 아래로 이동
-  };
+        const subscribePath = `/chat/room/${roomId}`;
+        stompClient.subscribe(subscribePath, (message) => {
+          const receivedMessage = JSON.parse(message.body);
+          console.log("📩 메시지 수신:", receivedMessage);
+          setMessages((prevMessages) => [...prevMessages, receivedMessage]);
+        });
+      },
+      onStompError: (frame) => {
+        console.error("🚨 STOMP 오류 발생:", frame);
+      },
+    });
+
+    stompClient.activate(); // WebSocket 연결 활성화
+    stompClientRef.current = stompClient;
+
+    return () => {
+      if (stompClientRef.current) {
+        stompClientRef.current.deactivate();
+      }
+    };
+  }, [roomId]);
+
+  // ✅ 채팅방 하단 자동 스크롤
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const onClickDetailBtn = () => {
     setDetail((prev) => !prev); // 현재 상태를 반대로 변경 (토글 기능)
   };
 
-  // 메시지 수신 설정
-  useEffect(() => {
-    if (!socket) return;
-
-    socket.on("message", (message) => {
-      console.log("수신한 메시지:", message);
-
-      setMessages((prev) => [...prev, message]);
-    });
-
-    return () => {
-      socket.off("message");
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!roomId) return;
-
-    console.log("✅ 현재 채팅방 ID:", roomId);
-
-    // ✅ 특정 채팅방 입장
-    socket.emit("joinRoom", { roomId });
-
-    socket.on("message", (message) => {
-      console.log("📩 메시지 수신:", message);
-      setMessages((prev) => [...prev, message]);
-    });
-
-    return () => {
-      console.log("🚪 채팅방 나가기:", roomId);
-      socket.emit("leaveRoom", { roomId }); // ✅ 채팅방 나가기
-      socket.off("message");
-    };
-  }, [roomId]);
-
-  // 메시지 전송 함수
+  // ✅ 메시지 전송
   const sendMessage = () => {
     if (!inputValue.trim()) return;
 
@@ -104,24 +95,42 @@ export default function ChatRoom() {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      sender: user.name, // ✅ 현재 로그인된 사용자 이름 추가
-      senderId: user.id, // ✅ 현재 로그인된 사용자 ID 추가
+      sender: user.name, // 실제 사용자 이름으로 변경 필요
+      senderId: user.id, // 실제 로그인된 사용자 ID로 변경 필요
+    };
+
+    // 메시지 전송 함수
+    const sendMessage = () => {
+      if (!inputValue.trim()) return;
+
+      const message: Message = {
+        type: "text",
+        text: inputValue,
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        sender: user.name, // ✅ 현재 로그인된 사용자 이름 추가
+        senderId: user.id, // ✅ 현재 로그인된 사용자 ID 추가
+      };
+
+      console.log("📤 메시지 전송:", message);
+      socket.emit("message", { roomId, message }); // ✅ roomId 포함하여 전송
+      setMessages((prev) => [...prev, message]); // 자신의 화면에 즉시 반영
+      setInputValue(""); // 입력 필드 초기화
+      inputRef.current?.focus();
     };
 
     console.log("📤 메시지 전송:", message);
-    socket.emit("message", { roomId, message }); // ✅ roomId 포함하여 전송
-    setMessages((prev) => [...prev, message]); // 자신의 화면에 즉시 반영
-    setInputValue(""); // 입력 필드 초기화
-    inputRef.current?.focus();
-  };
+    if (stompClientRef.current && stompClientRef.current.connected) {
+      stompClientRef.current.publish({
+        destination: `/app/chat/${roomId}`,
+        body: JSON.stringify(message),
+      });
+    }
 
-  // 로그인 처리 함수
-  const handleLogin = () => {
-    if (!inputValue.trim()) return;
-
-    setUsername(inputValue); // 입력된 이름으로 사용자 설정
-    setIsLogin(true); // 로그인 상태로 변경
-    setInputValue(""); // 입력 필드 초기화
+    setMessages((prev) => [...prev, message]); // 메시지 즉시 반영
+    setInputValue("");
     inputRef.current?.focus();
   };
 
@@ -143,11 +152,20 @@ export default function ChatRoom() {
         minute: "2-digit",
       }),
       sender: "System",
+      senderId: 0,
     };
 
     socket.emit("message", newMessage); // 서버로 메시지 전송
     setMessages((prev) => [...prev, newMessage]); // 자신의 화면에 즉시 반영
   };
+
+  console.log("📌 현재 방 정보:", {
+    roomId,
+    title,
+    price,
+    imageUrl,
+    tradeUserId,
+  });
 
   return (
     <main className="flex flex-col h-screen text-[#26220D] font-suit text-base">
@@ -159,30 +177,28 @@ export default function ChatRoom() {
           <div
             className="w-12 h-12 mr-2 rounded-2xl bg-center bg-cover bg-no-repeat flex-shrink-0"
             style={{
-              backgroundImage: "url('/path-to-image')",
               backgroundColor: "#d3d3d3",
             }}
           ></div>
           <div className="w-full">
             <div className="flex justify-between">
-              <span className="max-w-[250px] truncate">
-                우리 강아지 산책 시켜주실 분~
-              </span>
+              <span className="max-w-[250px] truncate">{title}</span>
               <span className="font-extrabold">구인중</span>
             </div>
             <div>
-              <span className="font-extrabold">10,000 원</span>
+              <span className="font-extrabold">{price} 원</span>
             </div>
           </div>
         </div>
       </section>
 
+      {/* 채팅 메시지 목록 */}
       <section className="mb-[8px] mx-8 flex flex-col items-start gap-6 overflow-y-auto flex-1">
         {messages.map((message, index) => (
           <div
             key={index}
             className={`w-full flex ${
-              message.sender === username ? "justify-end" : "justify-start"
+              message.sender === user.name ? "justify-end" : "justify-start"
             }`}
           >
             {message.type === "system" ? (
@@ -205,14 +221,14 @@ export default function ChatRoom() {
             ) : (
               <>
                 {/* 내가 보낸 메시지라면 시간은 왼쪽에 표시 */}
-                {message.sender === username && (
+                {message.sender === user.name && (
                   <span className="flex items-end min-w-[3.8125rem] mr-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
                     {message.time || "시간 없음"}
                   </span>
                 )}
 
                 {/* 상대 아이콘 */}
-                {message.sender !== username && (
+                {message.sender !== user.name && (
                   <div
                     className="w-[40px] h-[40px] mr-2 rounded-3xl bg-center bg-cover bg-no-repeat flex-shrink-0"
                     style={{
@@ -223,7 +239,7 @@ export default function ChatRoom() {
 
                 <div
                   className={`max-w-[79%] px-3 py-2 ${
-                    message.sender === username
+                    message.sender === user.name
                       ? "bg-[#E9E8E3] rounded-tl-lg rounded-tr-lg rounded-bl-lg rounded-br-none"
                       : "bg-[#BFE5B3] rounded-tl-none rounded-tr-lg rounded-bl-lg rounded-br-lg "
                   }text-[#26220D] text-base font-medium leading-6 tracking-[-0.025rem]`}
@@ -231,7 +247,7 @@ export default function ChatRoom() {
                   {message.text}
                 </div>
                 {/* 상대가 보낸 메세지라면 시간은 오른쪽에 표시 */}
-                {message.sender !== username && (
+                {message.sender !== user.name && (
                   <span className="flex items-end min-w-[3.8125rem] ml-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
                     {message.time}
                   </span>
@@ -260,7 +276,7 @@ export default function ChatRoom() {
             />
 
             {/* 산책 시작하기 */}
-            {username === "나" && (
+            {Number(tradeUserId) === user.id && (
               <Image
                 onClick={onClickApprove}
                 className=""
@@ -274,6 +290,7 @@ export default function ChatRoom() {
         </div>
       )}
       <div className="w-full">
+        {/* 입력 필드 및 버튼 */}
         <footer className="flex w-full items-end">
           <div className="mx-0 flex justify-between p-4 items-center gap-2 w-full bg-[#FDFCF8]">
             <div className="min-w-[3rem] h-full" onClick={onClickDetailBtn}>
@@ -288,6 +305,7 @@ export default function ChatRoom() {
                 height={44}
               />
             </div>
+
             <div className="w-full">
               <Input
                 ref={inputRef}

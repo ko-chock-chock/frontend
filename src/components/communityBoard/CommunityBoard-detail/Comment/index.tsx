@@ -22,15 +22,12 @@ export default function Comment() {
 
         if (!token || !postId) return;
 
-        const response = await fetch(
-          `http://3.36.40.240:8001/api/community/${postId}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await fetch(`/api/community/${postId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (!response.ok) throw new Error("북마크 상태 가져오기 실패");
 
@@ -56,16 +53,13 @@ export default function Comment() {
 
       if (!token || !postId) return;
 
-      const response = await fetch(
-        `http://3.36.40.240:8001/api/community/${postId}/bookmark`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/community/${postId}/bookmark`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) throw new Error(`북마크 토글 실패: ${response.status}`);
 
