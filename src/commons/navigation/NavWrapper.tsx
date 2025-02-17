@@ -1,35 +1,15 @@
-// src/commons/navigation/NavWrapper.tsx
 "use client";
 
-/**
- * NavigationWrapper 컴포넌트
- * 
- * 주요 기능:
- * 1. 애플리케이션 전체 네비게이션 레이아웃의 통합 관리
- * 2. 페이지별 동적 인증 요구사항 처리
- * 3. 컨텍스트 기반 페이지 타이틀 동적 설정
- * 4. 조건부 네비게이션 바 렌더링
- * 5. 세분화된 페이지 접근 권한 제어
- * 6. 채팅방 사용자별 동적 타이틀 표시
- * 
- * 핵심 보안 메커니즘:
- * - 라우트 기반 인증 검증
- * - 동적 경로 표준화
- * - 사용자 컨텍스트 기반 접근 제어
- */
-
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 import { useUserStore } from "../../commons/store/userStore";
 import { AuthGuard } from "@/components/auth/components/AuthGuard";
 import TopNavBar from "@/commons/navigation/TopNavBar";
 import BottomNavBar from "@/commons/navigation/BottomNavBar";
 import { TokenStorage } from "@/components/auth/utils/tokenUtils";
 
-// 네비게이션 타입 정의 (페이지 네비게이션 스타일)
 export type NavType = "onlyBack" | "onlyTitle" | "default";
 
-// 네비게이션 설정을 위한 인터페이스 정의
 interface NavigationConfig {
   navType: Partial<Record<string, NavType>>;
   hideTopNav: string[];
@@ -39,15 +19,6 @@ interface NavigationConfig {
   requiresAuth: string[];
 }
 
-/**
- * 동적 라우트 패턴 매칭 함수
- * 
- * @description URL 패턴을 표준화된 라우트로 변환
- * 복잡한 동적 세그먼트를 일관된 형식으로 정규화
- * 
- * @param pathname 현재 URL 경로
- * @returns 표준화된 라우트 경로
- */
 const matchDynamicRoute = (pathname: string): string => {
   const patterns = [
     { regex: /^\/jobList\/\d+$/, replacement: "/jobList/[boardId]" },
@@ -56,7 +27,6 @@ const matchDynamicRoute = (pathname: string): string => {
     { regex: /^\/communityBoard\/\d+\/edit$/, replacement: "/communityBoard/[boardId]/edit" },
     { regex: /^\/chatList$/, replacement: "/chatList" },
     { regex: /^\/chatList\/chatRoom$/, replacement: "/chatList/chatRoom" },
-    { regex: /^\/chatList\/chatBoxMine$/, replacement: "/chatList/chatBoxMine" },
   ];
 
   for (const { regex, replacement } of patterns) {
@@ -68,7 +38,6 @@ const matchDynamicRoute = (pathname: string): string => {
   return pathname;
 };
 
-// 네비게이션 전역 설정
 const navigationConfig: NavigationConfig = {
   navType: {
     "/jobList/[boardId]": "onlyBack",
@@ -82,10 +51,8 @@ const navigationConfig: NavigationConfig = {
     "/mypage": "onlyTitle",
     "/jobList/[boardId]/edit": "onlyBack",
     "/communityBoard/[boardId]/edit": "onlyBack",
-    "/chatList/chatRoom": "onlyBack", // 채팅방 네비게이션 타입
   },
 
-  // 인증 필수 페이지 경로 설정
   requiresAuth: [
     "/mypage",
     "/bookmark",
@@ -94,9 +61,8 @@ const navigationConfig: NavigationConfig = {
     "/communityBoard",
     "/jobList",
     "/communityBoard/[boardId]/edit",
-    "/chatList", // 채팅 목록 
-    "/chatList/chatRoom", // 채팅방
-    "/chatList/chatBoxMine", // 개인 채팅방
+    "/chatList",
+    "/chatList/chatRoom",
   ],
 
   publicPages: ["/login", "/signup", "/"],
@@ -112,10 +78,9 @@ const navigationConfig: NavigationConfig = {
     "/chatList/[chatId]",
     "/communityBoard/[boardId]",
     "/map",
-    "/chatList/chatBoxMine",
     "/jobList/[boardId]/edit",
     "/communityBoard/[boardId]/edit",
-    "/chatList/chatRoom", // 채팅방 하단 네비게이션 숨김
+    "/chatList/chatRoom",
   ],
 
   defaultTitles: {
@@ -130,7 +95,7 @@ const navigationConfig: NavigationConfig = {
     "/communityBoard": "커뮤니티",
     "/jobList/[boardId]/edit": "게시물 수정",
     "/communityBoard/[boardId]/edit": "커뮤니티 게시물 수정",
-    "/chatList/chatBoxMine": "나의 채팅목록",
+    "/chatList/chatRoom": "채팅방",  // 기본 타이틀 추가
   },
 };
 
@@ -138,14 +103,6 @@ interface NavigationWrapperProps {
   children: React.ReactNode;
 }
 
-
-/**
- * 게시글 수정 페이지 정보 추출 함수
- * 
- * @description URL에서 게시글 ID와 타입 추출
- * @param pathname 현재 URL 경로
- * @returns 게시글 ID와 타입 정보
- */
 const extractBoardInfoFromEditPage = (pathname: string) => {
   const pathParts = pathname.split("/");
   const boardId = pathParts[2];
@@ -153,105 +110,205 @@ const extractBoardInfoFromEditPage = (pathname: string) => {
   return { boardId, type };
 };
 
-/**
- * 채팅방 정보 추출 함수
- * 
- * @description 채팅방 관련 권한 및 리소스 정보 추출
- * @param pathname 현재 URL 경로
- * @returns 채팅방 권한 체크를 위한 리소스 정보
- */
 const extractChatRoomInfo = (pathname: string) => {
-  // 만약 pathname을 기반으로 추가 정보를 추출하고 싶다면 여기에 로직 추가 가능
   return { 
     type: 'chat' as const,
-    path: pathname  // pathname 정보 포함
+    path: pathname
   };
 };
 
-/**
- * NavigationWrapper 컴포넌트
- * 
- * @description 애플리케이션의 전체 레이아웃과 네비게이션을 관리하는 최상위 컴포넌트
- */
 export default function NavigationWrapper({
   children,
 }: NavigationWrapperProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
   const [pageTitle, setPageTitle] = useState<string>("");
   const currentUser = useUserStore((state) => state.user);
 
-  // 페이지 타이틀 동적 설정 로직
   useEffect(() => {
     let isMounted = true;
-
+  
     const setTitle = async () => {
       try {
-        const matchedRoute = matchDynamicRoute(pathname);
-
-        // 채팅방 타이틀 특별 처리
-        if (matchedRoute === "/chatList/chatRoom") {
-          // 토큰 가져오기
+        const currentRoute = matchDynamicRoute(pathname);
+  
+        if (currentRoute === "/chatList/chatRoom") {
           const token = TokenStorage.getAccessToken();
-          if (!token) {
-            console.log("[NavWrapper] 토큰 없음");
+          
+          // ✅ URL 파라미터 안전하게 추출
+          const roomId = searchParams.get('roomId')?.trim();
+          const tradeUserId = searchParams.get('tradeUserId')?.trim();
+  
+          // 📌 디버깅용 로그
+          console.log("[NavWrapper] 채팅방 파라미터 분석", {
+            roomId,
+            tradeUserId,
+            currentUserId: currentUser?.id
+          });
+  
+          // 🚨 새로 생성된 채팅방 처리 로직 (기존 유지)
+          if (roomId === 'success' && currentUser) {
+            try {
+              const response = await fetch('/api/trade/my-chat-rooms', {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+  
+              if (!response.ok) {
+                throw new Error('채팅방 목록 조회 실패');
+              }
+  
+              const chatRooms = await response.json();
+              const latestChat = chatRooms[0];
+              
+              if (latestChat) {
+                const isCurrentUserRequestUser = currentUser.id === latestChat.requestUserId;
+                const partnerName = isCurrentUserRequestUser 
+                  ? latestChat.writeUserName 
+                  : latestChat.requestUserName;
+                
+                if (isMounted && partnerName) {
+                  setPageTitle(`${partnerName}님과의 채팅`);
+                } else {
+                  setPageTitle('새로운 채팅');
+                }
+                
+                return;
+              } else {
+                if (isMounted) {
+                  setPageTitle('새로운 채팅');
+                }
+                return;
+              }
+            } catch (error) {
+              console.error("[NavWrapper] 채팅방 목록 조회 실패:", error);
+              if (isMounted) {
+                setPageTitle('새로운 채팅');
+              }
+              return;
+            }
+          }
+  
+          // 🔎 기존 채팅방 정보 조회 로직 개선
+          if (!token || !roomId) {
+            console.warn("[NavWrapper] 필수 정보 부족");
+            if (isMounted) {
+              setPageTitle("채팅방");
+            }
             return;
           }
-
+  
           try {
-            // 채팅방 정보 조회 API 호출
-            const response = await fetch(`/api/trade/my-chat-rooms`, {
+            // 1. 채팅방 상세 정보 조회
+            const response = await fetch(`/api/trade/chat-rooms/${roomId}`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
               }
             });
-
+  
+            // 🛡️ API 호출 실패 시 폴백 로직
             if (!response.ok) {
-              throw new Error("채팅방 정보 조회 실패");
+              // 📌 URL의 tradeUserId로 대체 처리
+              if (tradeUserId && currentUser) {
+                // 현재 사용자가 구매자인지 판매자인지 확인
+                const isCurrentUserRequestUser = currentUser.id !== Number(tradeUserId);
+                
+                // tradeUserId를 기반으로 상대방 이름 결정
+                const partnerName = isCurrentUserRequestUser 
+                  ? await fetchUserNameById(Number(tradeUserId), token)  // 새로 추가할 함수
+                  : currentUser.name;
+  
+                if (isMounted && partnerName) {
+                  setPageTitle(`${partnerName}님과의 채팅`);
+                } else {
+                  setPageTitle('채팅방');
+                }
+                return;
+              }
+  
+              throw new Error(`채팅방 정보 조회 실패: ${response.status}`);
             }
-
-            const chatRoomData = await response.json();
-            if (chatRoomData && isMounted) {
-              // 현재 사용자가 작성자인 경우 requestUserName을, 
-              // 그렇지 않은 경우 writeUserName을 표시
-              const partnerName = 
-                chatRoomData.writeUserId === currentUser?.id
-                  ? chatRoomData.requestUserName
-                  : chatRoomData.writeUserName;
+  
+            const chatData = await response.json();
+            
+            // 2. 현재 사용자와 상대방 비교 로직
+            if (chatData && isMounted && currentUser) {
+              const isCurrentUserRequestUser = currentUser.id === chatData.requestUserId;
               
-              setPageTitle(`${partnerName}님과의 대화`);
-              return;
+              // 상대방 이름 동적 추출
+              const partnerName = isCurrentUserRequestUser 
+                ? chatData.writeUserName 
+                : chatData.requestUserName;
+              
+              // 3. 타이틀 설정
+              if (partnerName) {
+                setPageTitle(`${partnerName}님과의 채팅`);
+              } else {
+                // 대체 타이틀 설정
+                setPageTitle('채팅방');
+              }
             }
-          } catch (error) {
-            console.error("[NavWrapper] 채팅방 정보 조회 실패:", error);
+          } catch (apiError) {
+            console.error("[NavWrapper] 채팅방 정보 조회 중 오류:", apiError);
+            
+            // 대체 타이틀 설정
+            if (isMounted) {
+              setPageTitle('채팅방');
+            }
+          }
+        } else {
+          // 일반 페이지 기본 타이틀 설정
+          if (isMounted) {
+            setPageTitle(navigationConfig.defaultTitles[currentRoute] || "");
           }
         }
-
-        // 일반 페이지 타이틀 설정
-        if (isMounted) {
-          setPageTitle(navigationConfig.defaultTitles[matchedRoute] || "");
-        }
       } catch (error) {
-        console.error("[NavWrapper] 타이틀 설정 중 에러:", error);
+        console.error("[NavWrapper] 타이틀 설정 중 전역 에러:", error);
+        
+        // 최종 대체 타이틀
         if (isMounted) {
-          setPageTitle(""); // 에러 시 빈 타이틀
+          setPageTitle("채팅방");
         }
       }
     };
-
+  
+    // 🆕 사용자 ID로 이름 조회 함수 추가
+    const fetchUserNameById = async (userId: number, token: string): Promise<string> => {
+      try {
+        const response = await fetch(`/api/users/${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+  
+        if (!response.ok) {
+          throw new Error('사용자 정보 조회 실패');
+        }
+  
+        const userData = await response.json();
+        return userData.name || '알 수 없는 사용자';
+      } catch (error) {
+        console.error("[NavWrapper] 사용자 정보 조회 실패:", error);
+        return '알 수 없는 사용자';
+      }
+    };
+  
     setTitle();
-
+  
     return () => {
       isMounted = false;
     };
-  }, [pathname, currentUser?.name, currentUser?.id]);
+  }, [pathname, searchParams, currentUser]);
 
-  // 현재 경로에 대한 네비게이션 설정 확인
+  // 기존 내비게이션 렌더링 로직 유지
   const matchedRoute = matchDynamicRoute(pathname);
   const showTopNav = !navigationConfig.hideTopNav.includes(matchedRoute);
   const showBottomNav = !navigationConfig.hideBottomNav.includes(matchedRoute);
-
-  // 인증 필요 여부 확인
   const requireAuth = navigationConfig.requiresAuth.includes(matchedRoute);
 
   // 페이지별 리소스 추출
@@ -289,18 +346,13 @@ export default function NavigationWrapper({
         showBottomNav ? "pb-24" : ""
       }`}
     >
-      {/* 상단 네비게이션 */}
       {showTopNav && (
         <TopNavBar
           title={pageTitle}
           type={navigationConfig.navType[matchedRoute] || "default"}
         />
       )}
-
-      {/* 메인 콘텐츠 */}
       {wrappedContent}
-
-      {/* 하단 네비게이션 */}
       {showBottomNav && <BottomNavBar />}
     </div>
   );
