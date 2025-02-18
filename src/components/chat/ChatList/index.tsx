@@ -7,6 +7,7 @@ import Image from "next/image";
 
 interface ChatRoom {
   tradeUserId: string;
+  tradeUserName: string;
   chatRoomId: string;
   lastMessage: string;
   updatedAt: string;
@@ -56,6 +57,7 @@ export default function ChatList() {
             let tradePostPrice = "가격 미정";
             let tradePostImage = "/default-image.jpg";
             let tradeUserId = ""; // ✅ 판매자 ID 추가
+            let tradeUserName = ""; // ✅ 게시물 주인 이름 추가
 
             try {
               const tradeResponse = await fetch(
@@ -75,6 +77,7 @@ export default function ChatList() {
                 tradePostPrice = tradeData.price || tradePostPrice;
                 tradePostImage = tradeData.imageUrl || tradePostImage;
                 tradeUserId = tradeData.writeUserId || ""; // ✅ 판매자 ID 가져오기
+                tradeUserName = tradeData.writeUserName || ""; // ✅ 판매자 이름 가져오기
                 console.log("📌 게시물 정보:", tradeData);
               }
             } catch (error) {
@@ -96,6 +99,7 @@ export default function ChatList() {
               tradePostPrice,
               tradePostImage,
               tradeUserId, // ✅ 판매자 ID 추가
+              tradeUserName,
             };
           })
         );
@@ -111,6 +115,7 @@ export default function ChatList() {
 
   const enterChatRoom = (room: ChatRoom) => {
     const url = `/chatList/chatRoom?roomId=${room.chatRoomId}
+    &postId=${room.tradePostId}
     &tradeUserId=${room.tradeUserId || ""}
     &title=${encodeURIComponent(
       room.tradePostTitle || ""
@@ -120,6 +125,16 @@ export default function ChatList() {
 
     router.push(url);
   };
+
+  {
+    chatRooms.map((room) => {
+      return (
+        <div key={room.chatRoomId}>
+          <p>{room.opponentName}</p>
+        </div> // ✅ 닫는 태그 추가
+      );
+    });
+  }
 
   return (
     <div className="p-4">
@@ -145,7 +160,6 @@ export default function ChatList() {
               <div
                 className="w-12 h-12 rounded-3xl bg-center bg-cover bg-no-repeat flex-shrink-0"
                 style={{
-                  backgroundImage: `url(${room.opponentProfileImage})`,
                   backgroundColor: "#d3d3d3",
                 }}
               ></div>
@@ -154,7 +168,9 @@ export default function ChatList() {
                 <div className="flex flex-row items-center gap-1">
                   {/* 상대방 이름 적용 */}
                   <span className="overflow-hidden text-ellipsis text-[#26220D] font-suit text-[1rem] font-semibold leading-[1.5rem] tracking-[-0.025rem]">
-                    {room.opponentName}
+                    {room.tradeUserName === user.name
+                      ? room.opponentName
+                      : room.tradeUserName}
                   </span>
                   <span> ・ </span>
                   {/* 마지막 메시지 시간 적용 */}
