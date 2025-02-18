@@ -144,9 +144,7 @@ const CommunityBoardDetail = ({
           <div
             className="w-12 h-12 rounded-3xl bg-center bg-cover bg-no-repeat flex-shrink-0"
             style={{
-              backgroundImage: `url(${
-                post.writeUserProfileImage || "/images/default-profile.png"
-              })`,
+              backgroundImage: `url(${post.writeUserProfileImage})`,
               backgroundColor: "#d3d3d3",
             }}
           ></div>

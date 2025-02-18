@@ -33,6 +33,7 @@ const CommunityBoardNew = () => {
 
   const images = watch("images") || [];
   const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [inputValue, setInputValue] = useState("");
 
   // ✅ 파일 업로드 시 이미지 추가
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,8 +208,12 @@ const CommunityBoardNew = () => {
             type="text"
             placeholder="제목을 입력해주세요"
             className="w-full"
-            {...register("title")}
+            value={inputValue} // ✅ 추가
+            {...register("title", {
+              onChange: (e) => setInputValue(e.target.value), // ✅ setValue 제거하고 여기서 직접 상태 업데이트
+            })}
           />
+
           {errors.title && (
             <p className="text-red-500 text-sm">{errors.title.message}</p>
           )}
