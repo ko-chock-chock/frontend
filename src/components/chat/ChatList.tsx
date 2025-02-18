@@ -1,10 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 
-export default function ChatListItem() {
+export default function ChatList() {
   return (
     <>
-      <Link href="../chatList/chatRoom">
+      <Link href="../chatList/chatBoxMine">
         <div className="flex p-4 px-5 justify-between items-start self-stretch backdrop-blur-[2px]">
           <div className="flex">
             <div

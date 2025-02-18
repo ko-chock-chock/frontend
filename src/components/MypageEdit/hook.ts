@@ -302,17 +302,9 @@ export const useProfileEdit = () => {
   const handlePasswordUpdate = useCallback(async () => {
     try {
       setIsLoading(true);
-  
-      // TokenStorage에서 토큰 가져오기
-      const token = TokenStorage.getAccessToken();
-      if (!token) {
-        throw new Error("인증 토큰이 없습니다.");
-      }
-  
       const response = await fetch("/api/users/password", {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`, // 토큰을 Authorization 헤더에 추가
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -320,10 +312,9 @@ export const useProfileEdit = () => {
           newPassword,
         }),
       });
-  
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "비밀번호 변경에 실패했습니다");
+        throw new Error("비밀번호 변경에 실패했습니다");
       }
 
       // 성공 모달 표시
@@ -357,32 +348,23 @@ export const useProfileEdit = () => {
    */
   const handleWithdraw = useCallback(async () => {
     try {
-      // TokenStorage에서 토큰 가져오기
-      const token = TokenStorage.getAccessToken();
-      if (!token) {
-        throw new Error("인증 토큰이 없습니다.");
-      }
-  
       const response = await fetch("/api/users", {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`, // 토큰을 Authorization 헤더에 추가
-        },
       });
-  
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "회원 탈퇴에 실패했습니다");
+        throw new Error("회원 탈퇴에 실패했습니다");
       }
-  
+
       TokenStorage.clearTokens();
       clearUser();
       router.push("/login");
     } catch (error) {
       console.error("[ProfileEdit] 회원 탈퇴 실패:", error);
-      alert(error instanceof Error ? error.message : "회원 탈퇴에 실패했습니다");
+      throw error;
     }
   }, [clearUser, router]);
+
   /**
    * 로그아웃 처리
    */

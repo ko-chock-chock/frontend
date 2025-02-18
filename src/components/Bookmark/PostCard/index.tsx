@@ -1,53 +1,20 @@
 import Image from "next/image";
-import { usePostCard } from "@/components/Bookmark/PostCard/hook";
 import {
+  Post,
   getRelativeTimeString,
   isBookmarkedPost,
   isWishlistedPost,
-  PostCardProps,
 } from "./types";
 
-export default function PostCard({
-  post,
-  onPostClick,
-  onToggleLike,
-  onToggleBookmark,
-}: PostCardProps) {
+interface PostCardProps {
+  post: Post;
+  onPostClick: (id: number) => void;
+}
+
+export default function PostCard({ post, onPostClick }: PostCardProps) {
+  // 기본 이미지 경로 상수화
   const DEFAULT_THUMBNAIL = "/images/post_list_default_img_100px.svg";
   const DEFAULT_PROFILE = "/images/post_list_profile_default_img_20px.svg";
-
-  const {
-    likeCount,
-    bookmarkCount,
-    isLiked,
-    isBookmarked,
-    handleLikeToggle,
-    handleBookmarkToggle,
-  } = usePostCard(post);
-
-  // 🌟 공통 프로필 이미지 렌더링 함수
-  // 이미지 로드 실패 시 기본 이미지로 대체하는 로직 구현
-  const renderProfileImage = (imageUrl: string | undefined) => {
-    console.log(`Profile Image URL: ${imageUrl ?? "undefined"}`); // 수정된 로깅
-
-    return (
-      <div className="relative w-5 h-5 rounded-full overflow-hidden">
-        <Image
-          src={imageUrl || DEFAULT_PROFILE}
-          alt="프로필"
-          fill
-          className="object-cover"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = DEFAULT_PROFILE;
-            console.log(
-              `Image load failed. URL was: ${imageUrl ?? "undefined"}`
-            ); // 수정된 에러 로깅
-          }}
-        />
-      </div>
-    );
-  };
 
   // 찜 거래 게시글 렌더링
   if (isWishlistedPost(post)) {
@@ -63,7 +30,6 @@ export default function PostCard({
                 src={post.thumbnailImage || DEFAULT_THUMBNAIL}
                 alt={post.title}
                 fill
-                sizes="100px" //경고 해결 위해 작성 has "fill" but is missing "sizes" prop. Please add it to improve page performance.
                 className="object-cover "
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
@@ -79,20 +45,11 @@ export default function PostCard({
                 {post.title}
               </h2>
               <Image
-                src={
-                  isLiked
-                    ? "/icons/bookmark-like_Page/like_on_24px.svg"
-                    : "/icons/bookmark-like_Page/like_off_24px.svg"
-                }
-                alt="찜"
-                width={24}
-                height={24}
-                style={{ width: "auto", height: "auto" }}
+                src="/icons/bookmark-like_Page/like_on_24px.svg"
+                alt="찜on"
+                width={20}
+                height={20}
                 className="cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleLikeToggle(onToggleLike);
-                }}
               />
             </div>
 
@@ -111,9 +68,13 @@ export default function PostCard({
             </div>
 
             <div className="flex justify-between items-center">
-              {/* 🆕 프로필 이미지 렌더링 함수 적용 */}
               <div className="flex items-center gap-1">
-                {renderProfileImage(post.writeUserProfileImage)}
+                <Image
+                  src={post.writeUserProfileImage || DEFAULT_PROFILE}
+                  alt="프로필"
+                  width={20}
+                  height={20}
+                />
                 <span className="text-sm-medium-quaternary">
                   {post.writeUserName}
                 </span>
@@ -138,7 +99,9 @@ export default function PostCard({
                     width={24}
                     height={24}
                   />
-                  <span className="text-sm-medium-quaternary">{likeCount}</span>
+                  <span className="text-sm-medium-quaternary">
+                    {post.likeCount}
+                  </span>
                 </div>
                 <div className="flex items-center">
                   <Image
@@ -158,6 +121,8 @@ export default function PostCard({
       </div>
     );
   }
+  
+  
 
   // 북마크 커뮤니티 게시글 렌더링
   if (isBookmarkedPost(post)) {
@@ -173,7 +138,6 @@ export default function PostCard({
                 src={post.thumbnailImage || DEFAULT_THUMBNAIL}
                 alt={post.title}
                 fill
-                sizes="100px" //경고 해결 위해 작성 has "fill" but is missing "sizes" prop. Please add it to improve page performance.
                 className="object-cover "
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
@@ -189,24 +153,16 @@ export default function PostCard({
                 {post.title}
               </h2>
               <Image
-                src={
-                  isBookmarked
-                    ? "/icons/bookmark-like_Page/bookmark_on_24px.svg"
-                    : "/icons/bookmark-like_Page/bookmark_off_24px.svg"
-                }
-                alt="북마크"
-                width={24}
-                height={24}
-                style={{ width: "auto", height: "auto" }}
+                src="/icons/bookmark-like_Page/bookmark_on_24px.svg"
+                alt="더보기"
+                width={20}
+                height={20}
                 className="cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleBookmarkToggle(onToggleBookmark);
-                }}
               />
             </div>
 
             <div className="flex items-center gap-1">
+              {/* <span className="text-sm-medium">∙</span> */}
               <span className="text-sm-medium">
                 {getRelativeTimeString(post.createdAt)}
               </span>
@@ -219,9 +175,13 @@ export default function PostCard({
             </div>
 
             <div className="flex justify-between items-center">
-              {/* 🆕 프로필 이미지 렌더링 함수 적용 */}
               <div className="flex items-center gap-1">
-                {renderProfileImage(post.writeUserProfileImage)}
+                <Image
+                  src={post.writeUserProfileImage || DEFAULT_PROFILE}
+                  alt="프로필"
+                  width={20}
+                  height={20}
+                />
                 <span className="text-sm-medium-quaternary">
                   {post.writeUserName}
                 </span>
@@ -247,7 +207,7 @@ export default function PostCard({
                     height={24}
                   />
                   <span className="text-sm-medium-quaternary">
-                    {bookmarkCount}
+                    {post.bookmarkCount}
                   </span>
                 </div>
                 <div className="flex items-center">

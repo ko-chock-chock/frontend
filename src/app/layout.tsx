@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 // import localFont from "next/font/local";
 import "./globals.css";
 import  NavigationWrapper  from "@/commons/navigation/NavWrapper";
-import '@/commons/fetch-interceptor';
-import { Toaster } from 'react-hot-toast'; 
 
 // const geistSans = localFont({
 //   src: "fonts/GeistVF.woff",
@@ -32,7 +30,6 @@ export default function RootLayout({
         <NavigationWrapper>
           <main>{children}</main>
         </NavigationWrapper>
-        <Toaster /> 
       </body>
 
       {/* 이전에 작성되어있던것 */}

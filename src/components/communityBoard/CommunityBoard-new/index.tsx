@@ -33,7 +33,6 @@ const CommunityBoardNew = () => {
 
   const images = watch("images") || [];
   const [previewImages, setPreviewImages] = useState<string[]>([]);
-  const [inputValue, setInputValue] = useState("");
 
   // ✅ 파일 업로드 시 이미지 추가
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,13 +81,16 @@ const CommunityBoardNew = () => {
 
       console.log("📸 전송할 이미지 파일:", formData.getAll("files"));
 
-      const response = await fetch("/api/uploads/multiple", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        "http://3.36.40.240:8001/api/uploads/multiple",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
 
       console.log("✅ 이미지 업로드 완료! 응답 상태 코드:", response.status);
 
@@ -154,7 +156,7 @@ const CommunityBoardNew = () => {
 
       console.log("📨 전송할 데이터:", payload);
 
-      const response = await fetch("/api/community", {
+      const response = await fetch("http://3.36.40.240:8001/api/community", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -208,12 +210,8 @@ const CommunityBoardNew = () => {
             type="text"
             placeholder="제목을 입력해주세요"
             className="w-full"
-            value={inputValue} // ✅ 추가
-            {...register("title", {
-              onChange: (e) => setInputValue(e.target.value), // ✅ setValue 제거하고 여기서 직접 상태 업데이트
-            })}
+            {...register("title")}
           />
-
           {errors.title && (
             <p className="text-red-500 text-sm">{errors.title.message}</p>
           )}

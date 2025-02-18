@@ -1,9 +1,9 @@
-import ChatRoom from "@/components/chat/ChatRoom";
+import ChatBox from "@/components/chat/ChatBox";
 
 export default function chatBoxMine() {
   return (
     <>
-      <ChatRoom />
+      <ChatBox />
     </>
   );
 }
