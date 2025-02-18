@@ -43,6 +43,7 @@ const navigationConfig: NavigationConfig = {
     "/jobList/[boardId]": "onlyBack",
     "/chatList/[chatId]": "onlyBack",
     "/communityBoard/[boardId]": "onlyBack",
+    "/jobList/[boardId]/map": "onlyBack",
     "/jobList": "onlyTitle",
     "/chatList": "onlyTitle",
     "/communityBoard": "onlyTitle",
@@ -78,6 +79,7 @@ const navigationConfig: NavigationConfig = {
     "/chatList/[chatId]",
     "/communityBoard/[boardId]",
     "/map",
+    "/jobList/[boardId]/map",
     "/jobList/[boardId]/edit",
     "/communityBoard/[boardId]/edit",
     "/chatList/chatRoom",
@@ -96,6 +98,7 @@ const navigationConfig: NavigationConfig = {
     "/jobList/[boardId]/edit": "게시물 수정",
     "/communityBoard/[boardId]/edit": "커뮤니티 게시물 수정",
     "/chatList/chatRoom": "채팅방",  // 기본 타이틀 추가
+    "/jobList/[boardId]/map": "지도",
   },
 };
 
