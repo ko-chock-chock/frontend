@@ -54,6 +54,7 @@ export default function PostCard({
           src={imageUrl || DEFAULT_PROFILE}
           alt="프로필"
           fill
+          sizes="20px" // 이미지 실제 크기에 맞게 설정
           className="object-cover"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
