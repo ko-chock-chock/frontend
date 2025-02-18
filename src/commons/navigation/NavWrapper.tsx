@@ -199,16 +199,21 @@ export default function NavigationWrapper({
     // 이전 경로를 저장하고 현재 경로를 업데이트
     navigationHistory.prevPath = navigationHistory.currentPath;
     navigationHistory.currentPath = pathname;
-
+  
     // 수정 페이지에서 다른 페이지로 이동할 때 플래그 설정
     if (navigationHistory.prevPath.includes('/edit') && !pathname.includes('/edit')) {
       navigationHistory.isFromEditPage = true;
     } 
     // 상세 페이지에서 다른 페이지로 이동하거나 다시 수정 페이지로 갈 때 플래그 리셋
-    else if (!pathname.includes('/[boardId]') || pathname.includes('/edit')) {
+    // 참고: 실제 경로에는 '[boardId]'가 아닌 실제 ID가 있으므로 패턴 매칭 사용
+    else if (
+      (!(/^\/jobList\/\d+$/.test(pathname)) && 
+       !(/^\/communityBoard\/\d+$/.test(pathname))) || 
+      pathname.includes('/edit')
+    ) {
       navigationHistory.isFromEditPage = false;
     }
-
+  
     console.log("[NavWrapper] 네비게이션 히스토리 업데이트:", {
       prevPath: navigationHistory.prevPath,
       currentPath: navigationHistory.currentPath,
