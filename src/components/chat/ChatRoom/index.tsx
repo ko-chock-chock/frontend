@@ -43,6 +43,9 @@ export default function ChatRoom() {
   const tradeUserImage = searchParams.get("tradeUserImage") || ""; // 게시글 올린 유저의 프사
   const user = useUserStore((state) => state.user) ?? { name: "", id: 0 }; // 로그인한 유저정보 가져옴
   const stompClientRef = useRef<Client | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [showImg, setShowImg] = useState(""); // 이미지 미리보기
 
   useEffect(() => {
     console.log("📡 WebSocket 연결 시도 중...");
@@ -161,8 +164,50 @@ export default function ChatRoom() {
   };
 
   // 이미지 함수 들어가는 부분
-  // const onClickImage = () => {
-  //   const imageMessage: Message = {};
+  const onClickImage = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click(); // ✅ 파일 선택 창 열기
+    }
+    const imageMessage: Message = {
+      chatRoomId: Number(roomId),
+      type: "IMAGE",
+      message: "",
+      createdAt: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      writeUserId: user?.id,
+    };
+
+    if (stompClientRef.current && stompClientRef.current.connected) {
+      stompClientRef.current.publish({
+        destination: "/app/chat/send", // 🔥 이 부분이 서버에서 받는 경로야
+        body: JSON.stringify(imageMessage),
+      });
+      console.log("✅ 메시지 전송 성공!");
+    } else {
+      console.error("🚨 WebSocket 연결 안됨! 메시지 전송 실패");
+    }
+  };
+
+  // ✅ 파일 업로드 시 이미지 추가
+  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   if (e.target.files) {
+  //     const newFiles: File[] = Array.from(e.target.files);
+  //     setShowImg("images", [...(showImg || []), ...newFiles]);
+
+  //     const previewURLs = newFiles.map((file) => URL.createObjectURL(file));
+  //     setPreviewImages([...previewImages, ...previewURLs]);
+  //   }
+  // };
+
+  // ✅ 이미지 미리보기에서 삭제 기능
+  // const removeImage = (index: number) => {
+  //   setPreviewImages((prev) => prev.filter((_, i) => i !== index));
+  //   setShowImg(
+  //     "images",
+  //     showImg.filter((_, i) => i !== index)
+  //   );
   // };
 
   // ✅ 채팅방 하단 자동 스크롤
@@ -261,9 +306,15 @@ export default function ChatRoom() {
                 </div>
               )}
 
-              {/* 여기에 IMAGE 타입 들어갈 예정 */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                // onChange={handleFileChange}
+                className="hidden"
+              />
 
-              {/* 📌 TEXT 타입 메시지 */}
               {/* 📌 TEXT 타입 메시지 */}
               {message.type === "TEXT" && (
                 <>
@@ -332,7 +383,7 @@ export default function ChatRoom() {
           <div className="flex w-full gap-3 ">
             {/* 사진 보내기 */}
             <Image
-              // onClick={onClickImage} - 나중에 사용
+              onClick={onClickImage}
               className=""
               src="/images/chat_image_upload_btn_img_44px.svg"
               alt="send Icon"
