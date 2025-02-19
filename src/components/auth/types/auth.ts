@@ -1,48 +1,22 @@
 // src/components/auth/types/auth.ts
+import { ReactNode } from "react";
 
 /**
- * 공통 API 응답 타입
+ * 토큰 관련 타입
  */
-export interface ApiResponse<T> {
-  status: number;
-  message: string;
-  data?: T;
-  error?: {
-    message: string;
-    status?: number;
-  };
+export interface TokenData {
+  accessToken: string;
+  refreshToken: string;
+  timestamp: number;
+}
+
+export interface TokenRefreshState {
+  lastAttemptTime: number;
+  attemptCount: number;
 }
 
 /**
- * 로그인 폼 데이터 타입 
- */
-export interface LoginFormData {
-  mail: string;
-  password: string;
-}
-
-/**
- * 회원가입 폼 데이터 타입
- */
-export interface SignupFormData {
-  mail: string;
-  name: string;
-  password: string;
-  passwordConfirm: string;
-}
-
-/**
- * 사용자 프로필 타입
- */
-export interface UserProfile {
-  user_id: string;
-  mail: string;
-  name: string;
-  profile_image?: string | null;
-}
-
-/**
- * JWT 토큰 응답 타입
+ * 인증 응답 관련 타입
  */
 export interface AuthResponse {
   accessToken: string;
@@ -50,9 +24,6 @@ export interface AuthResponse {
   message?: string;
 }
 
-/**
- * 권한 체크 결과 타입
- */
 export interface AuthCheckResult {
   isAuthenticated: boolean;
   isAuthorized: boolean;
@@ -60,35 +31,61 @@ export interface AuthCheckResult {
 }
 
 /**
- * 리소스 권한 체크용 타입
+ * 보안 이벤트 로깅을 위한 상세 정보 인터페이스
+ * 보안 관련 이벤트 발생시 서버에 전송되는 데이터 구조 정의
  */
-export interface AuthorizedResource {
-  userId: string;
-  resourceType: 'post' | 'community' | 'comment' | 'reply';
-  resourceId: string;
+export interface SecurityEventDetails {
+  /** 사용자 고유 식별자 */
+  userId?: number;
+  /** 접근 시도된 게시글 ID */
+  attemptedBoardId?: string;
+  /** 이벤트 발생 시간 */
+  timestamp: string;
+  /** 이벤트 관련 메시지 */
+  message?: string;
+  /** 에러 발생시 에러 메시지 */
+  errorMessage?: string;
+  /** API 응답 상태 코드 */
+  responseStatus?: number;
+  /** 요청 URL */
+  url?: string;
+  /** 사용자 브라우저 정보 */
+  userAgent?: string;
 }
 
 /**
- * 거래 게시글 수정 요청 데이터 타입
+ * AuthGuard 관련 타입
  */
-export interface TradeUpdateRequest {
-  title: string;
-  region: string;
-  price: number;
-  contents: string;
-  images: string[];
+export interface AuthGuardProps {
+  children: ReactNode;
+  resource?: {
+    userId?: number;
+    boardId?: string;
+    type?: "trade" | "community" | "chat";
+    writeUserId?: number;
+    requestUserId?: number;
+  };
+  requireAuth?: boolean;
+  fallback?: ReactNode;
+  redirectTo?: string;
+  loadingComponent?: ReactNode;
 }
 
 /**
- * 거래 게시글 응답 데이터 타입
+ * 채팅방 정보 인터페이스
+ * 채팅방 접근 권한 확인을 위한 기본 구조 정의
  */
-export interface TradeResponseData {
-  message: string;
-  data: TradeData | null;
+export interface ChatRoom {
+  /** 채팅방 작성자 ID */
+  writeUserId: number;
+  /** 채팅 요청자 ID */
+  requestUserId: number;
+  /** 채팅방 고유 식별자 */
+  roomId: string;
 }
 
 /**
- * 거래 게시글 데이터 타입
+ * 게시글 데이터 관련 타입
  */
 export interface TradeData {
   userId: number;
@@ -99,17 +96,6 @@ export interface TradeData {
   images: string[];
 }
 
-/**
- * 커뮤니티 게시글 응답 데이터 타입
- */
-export interface CommunityResponseData {
-  message: string;
-  data: CommunityData | null;
-}
-
-/**
- * 커뮤니티 게시글 데이터 타입
- */
 export interface CommunityData {
   userId: number;
   title: string;
@@ -117,38 +103,25 @@ export interface CommunityData {
   images: string[];
 }
 
-/**
- * 댓글 응답 데이터 타입
- */
-export interface CommentResponseData {
+export interface CommunityResponseData {
   message: string;
-  data: CommentData | null;
+  data: CommunityData | null;
 }
 
-/**
- * 댓글 데이터 타입
- */
-export interface CommentData {
-  id: number;
+export interface CachedBoardData {
   userId: number;
-  content: string;
-  createdAt: string;
+  data: TradeData;
+  timestamp: number;
 }
 
-/**
- * 리플 응답 데이터 타입
- */
-export interface ReplyResponseData {
+export interface BoardApiResponse {
   message: string;
-  data: ReplyData | null;
+  data: TradeData | null;
 }
 
 /**
- * 리플 데이터 타입
+ * 컴포넌트 Props 타입
  */
-export interface ReplyData {
-  id: number;
-  userId: number;
-  content: string;
-  createdAt: string;
+export interface AuthProviderProps {
+  children: ReactNode;
 }
