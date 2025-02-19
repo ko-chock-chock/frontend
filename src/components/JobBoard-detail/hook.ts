@@ -7,7 +7,7 @@ import axios from "axios";
 // useRouter, axiosInstance 추가함.
 
 const useJobBoardDetail = () => {
-  const { boardId } = useParams<{ boardId: string }>();
+  const { boardId } = useParams() as { boardId: string };
   const [boardData, setBoardData] = useState<BoardData | null>(null);
   const [checkLike, setCheckLike] = useState(null);
   const [isLiked, setIsLiked] = useState<boolean>(false);
