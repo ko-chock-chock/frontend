@@ -13,7 +13,7 @@ import axiosInstance from "@/utils/axiosInstance";
 interface Message {
   createdAt?: string;
   writeUserName?: string;
-  message: string | { title: string; subtitle: string };
+  message: string;
   chatRoomId: any;
   type: string; // 메시지 타입 ('text' 또는 'system')
   text?: string; // 일반 메시지 내용
@@ -22,7 +22,6 @@ interface Message {
   senderId?: number; // 발신자ID 지울예정
   writeUserProfileImage?: string;
   writeUserId?: number | undefined;
-  content?: { title: string; subtitle: string }; // 시스템 메시지의 추가 내용
 }
 
 export default function ChatRoom() {
@@ -37,16 +36,11 @@ export default function ChatRoom() {
   const postId = searchParams.get("postId"); // 해당 게시물의 ID
   const title = searchParams.get("title");
   const price = searchParams.get("price");
-  const imageUrl = searchParams.get("imageUrl");
-  const tradeUserId = searchParams.get("tradeUserId") || ""; // 🔥 게시물 ID 추가
+  const imageUrl = searchParams.get("imageUrl"); // 해당 게시물의 썸네일
+  const tradeUserId = searchParams.get("tradeUserId") || ""; // 게시글 올린 유저의 ID
+  const tradeUserImage = searchParams.get("tradeUserImage") || ""; // 게시글 올린 유저의 프사
   const user = useUserStore((state) => state.user) ?? { name: "", id: 0 }; // 로그인한 유저정보 가져옴
   const stompClientRef = useRef<Client | null>(null);
-  const [messageType, setMessageType] = useState("TEXT"); // 메시지 타입 (TEXT, IMAGE 등)
-  const createdAt = new Date().toLocaleTimeString("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
 
   useEffect(() => {
     console.log("📡 WebSocket 연결 시도 중...");
@@ -116,7 +110,7 @@ export default function ChatRoom() {
     const chatMessage: Message = {
       chatRoomId: Number(roomId), // ✅ 문자열이 아니라 숫자로 변환
 
-      type: messageType, // 메세지 타입
+      type: "TEXT", // 메세지 타입
       message: inputValue, // 메세지 내용
 
       writeUserName: user?.name ?? "", // 현재 로그인 사용자 이름
@@ -144,15 +138,12 @@ export default function ChatRoom() {
     const walkMessage: Message = {
       chatRoomId: Number(roomId),
       type: "LOCATION",
-      message: "산책을 시작합니다.",
-      // {
-      //   title: "산책을 시작하려 해요!",
-      //   subtitle: "우리 반려동물의 위치를 확인해 보세요!",
-      // },
-      // createdAt: new Date().toLocaleTimeString([], {
-      //   hour: "2-digit",
-      //   minute: "2-digit",
-      // }),
+      message: "산책을 시작하려 해요!\n우리 반려동물의 위치를 확인해 보세요!",
+
+      createdAt: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
       writeUserId: user?.id,
     };
 
@@ -166,6 +157,12 @@ export default function ChatRoom() {
       console.error("🚨 WebSocket 연결 안됨! 메시지 전송 실패");
     }
   };
+
+  // 이미지 함수 들어가는 부분
+  // const onClickImage = () => {
+  //   const imageMessage: Message = {};
+  // };
+
   // ✅ 채팅방 하단 자동 스크롤
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -197,16 +194,20 @@ export default function ChatRoom() {
           <div
             className="w-12 h-12 mr-2 rounded-2xl bg-center bg-cover bg-no-repeat flex-shrink-0"
             style={{
-              backgroundColor: "#d3d3d3",
+              backgroundImage: imageUrl ? `url(${imageUrl})` : "none",
+              backgroundColor: imageUrl ? "transparent" : "#d3d3d3",
             }}
           ></div>
           <div className="w-full">
             <div className="flex justify-between">
               <span className="max-w-[250px] truncate">{title}</span>
-              <span className="font-extrabold">구인중</span>
+              <span className="font-extrabold">게시중</span>{" "}
+              {/* 나중에 게시 완료 이런식으로 바뀌는 로직 추가해야함. */}
             </div>
             <div>
-              <span className="font-extrabold">{price} 원</span>
+              <span className="font-extrabold">
+                {price === "가격 미정" ? 0 : price} 원
+              </span>
             </div>
           </div>
         </div>
@@ -215,11 +216,6 @@ export default function ChatRoom() {
       {/* 채팅 메시지 목록 */}
       <section className="mb-[8px] mx-4 flex flex-col items-start gap-6 overflow-y-auto flex-1">
         {messages.map((message, index) => {
-          console.log("🖥 렌더링되는 message:", message); // ✅ 확인용 로그 추가
-          console.log("🔍 message.sender:", message.sender);
-          console.log("🔍 message.writeUserName:", message.writeUserName);
-          console.log("🔍 user.name:", user.name);
-
           return (
             <div
               key={index}
@@ -229,34 +225,59 @@ export default function ChatRoom() {
                   : "justify-start"
               }`}
             >
-              {message.type === "LOCATION" ? ( // 산책 알림
-                <div className="w-full min-h-[120px] flex flex-col p-2 px-5 items-start gap-4 self-stretch border-l-[2.5px] border-[#72C655]">
-                  <div className="flex flex-col self-stretch text-[#26220D] font-suit text-base font-medium leading-[1.5rem] tracking-[-0.025rem]">
-                    <span>{message.content?.title}</span>
-                    <span>{message.content?.subtitle}</span>
+              {/* 📌 LOCATION 타입 메시지 */}
+              {message.type === "LOCATION" && (
+                <div className="flex flex-col w-full">
+                  <div className="w-full min-h-[120px] flex flex-col p-2 px-5 items-start gap-4 self-stretch border-l-[2.5px] border-[#72C655]">
+                    <div className="flex flex-col self-stretch text-[#26220D] font-suit text-base font-medium leading-[1.5rem] tracking-[-0.025rem]">
+                      {message.message.split("\n").map((line, i) => (
+                        <span key={i}>
+                          {line}
+                          <br />
+                        </span>
+                      ))}
+                    </div>
+                    <Button design="design2" onClick={onClickMap}>
+                      <Image
+                        className="mr-1"
+                        src="/icons/chat_location_icon_20px.svg"
+                        alt="location Icon"
+                        width={20}
+                        height={20}
+                      />
+                      위치 확인하기
+                    </Button>
                   </div>
-                  <Button design="design2" onClick={onClickMap}>
-                    <Image
-                      className="mr-1"
-                      src="/icons/chat_location_icon_20px.svg"
-                      alt="location Icon"
-                      width={20}
-                      height={20}
-                    />
-                    위치 확인하기
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  {/* 내가 보낸 메시지라면 시간은 왼쪽에 표시 */}
-                  {(message.sender || message.writeUserName) === user.name && (
-                    <span className="flex items-end min-w-[3.8125rem] mr-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
+                  {message.createdAt && (
+                    <span className="flex items-end min-w-[3.8125rem] mt-4 mr-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
                       {new Date(message.createdAt).toLocaleTimeString("ko-KR", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </span>
                   )}
+                </div>
+              )}
+
+              {/* 여기에 IMAGE 타입 들어갈 예정 */}
+
+              {/* 📌 TEXT 타입 메시지 */}
+              {/* 📌 TEXT 타입 메시지 */}
+              {message.type === "TEXT" && (
+                <>
+                  {/* 내가 보낸 메시지라면 시간 왼쪽 */}
+                  {(message.sender || message.writeUserName) === user.name &&
+                    message.createdAt && (
+                      <span className="flex items-end min-w-[3.8125rem] mr-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
+                        {new Date(message.createdAt).toLocaleTimeString(
+                          "ko-KR",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </span>
+                    )}
 
                   {/* 상대 아이콘 */}
                   {(message.sender || message.writeUserName) !== user.name && (
@@ -272,23 +293,28 @@ export default function ChatRoom() {
                     className={`max-w-[79%] px-3 py-2 ${
                       (message.sender || message.writeUserName) === user.name
                         ? "bg-[#E9E8E3] rounded-tl-lg rounded-tr-lg rounded-bl-lg rounded-br-none"
-                        : "bg-[#BFE5B3] rounded-tl-none rounded-tr-lg rounded-bl-lg rounded-br-lg "
+                        : "bg-[#BFE5B3] rounded-tl-none rounded-tr-lg rounded-bl-lg rounded-br-lg"
                     } text-[#26220D] text-base font-medium leading-6 tracking-[-0.025rem]`}
                   >
                     {message.text || message.message}
                   </div>
 
-                  {/* 상대가 보낸 메세지라면 시간은 오른쪽에 표시 */}
-                  {(message.sender || message.writeUserName) !== user.name && (
-                    <span className="flex items-end min-w-[3.8125rem] ml-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
-                      {new Date(message.createdAt).toLocaleTimeString("ko-KR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  )}
+                  {/* 상대가 보낸 메세지라면 시간 오른쪽 */}
+                  {(message.sender || message.writeUserName) !== user.name &&
+                    message.createdAt && (
+                      <span className="flex items-end min-w-[3.8125rem] ml-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
+                        {new Date(message.createdAt).toLocaleTimeString(
+                          "ko-KR",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </span>
+                    )}
                 </>
               )}
+
               <div ref={messagesEndRef} />
             </div>
           );
@@ -304,6 +330,7 @@ export default function ChatRoom() {
           <div className="flex w-full gap-3 ">
             {/* 사진 보내기 */}
             <Image
+              // onClick={onClickImage} - 나중에 사용
               className=""
               src="/images/chat_image_upload_btn_img_44px.svg"
               alt="send Icon"
@@ -325,9 +352,10 @@ export default function ChatRoom() {
           </div>
         </div>
       )}
-      <div className="w-full">
+
+      <footer className="w-full">
         {/* 입력 필드 및 버튼 */}
-        <footer className="flex w-full items-end flex-shrink-0">
+        <div className="flex w-full items-end flex-shrink-0">
           <div className="mx-0 flex justify-between p-4 items-center gap-2 w-full bg-[#FDFCF8]">
             <div className="min-w-[3rem] h-full" onClick={onClickDetailBtn}>
               <Image
@@ -361,8 +389,8 @@ export default function ChatRoom() {
               />
             </div>
           </div>
-        </footer>
-      </div>
+        </div>
+      </footer>
     </main>
   );
 }
