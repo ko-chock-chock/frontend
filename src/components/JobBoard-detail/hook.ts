@@ -2,12 +2,11 @@
 import { useEffect, useState } from "react";
 import { BoardData, CheckLike } from "./types";
 import { useParams, useRouter } from "next/navigation";
-import axiosInstance from "@/utils/axiosInstance";
-import axios from "axios";
+
 // useRouter, axiosInstance 추가함.
 
 const useJobBoardDetail = () => {
-  const { boardId } = useParams() as { boardId: string };
+  const { boardId } = useParams<{ boardId: string }>();
   const [boardData, setBoardData] = useState<BoardData | null>(null);
   const [checkLike, setCheckLike] = useState(null);
   const [isLiked, setIsLiked] = useState<boolean>(false);
