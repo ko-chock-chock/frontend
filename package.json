@@ -14,7 +14,7 @@
     "@stomp/stompjs": "^7.0.0",
     "axios": "^1.7.9",
     "cors": "^2.8.5",
-    "next": "14.2.20",
+    "next": "13.4.12",
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.54.2",
@@ -37,7 +37,7 @@
     "@types/sockjs-client": "^1.5.4",
     "autoprefixer": "^10.4.20",
     "eslint": "^8",
-    "eslint-config-next": "13.4.12",
+    "eslint-config-next": "14.2.20",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
