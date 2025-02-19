@@ -13,6 +13,7 @@ interface ChatRoom {
   updatedAt: string;
   opponentName: string;
   opponentProfileImage?: string;
+  tradeUserProfileImage?: string;
   tradePostId: number;
   tradePostTitle?: string;
   tradePostPrice?: string;
@@ -23,7 +24,7 @@ export default function ChatList() {
   const user = useUserStore((state) => state.user);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const router = useRouter();
-  const userId = user.id;
+  const userId = user?.id;
 
   useEffect(() => {
     const fetchChatRooms = async () => {
@@ -55,7 +56,7 @@ export default function ChatList() {
           data.map(async (room: any) => {
             let tradePostTitle = "제목 없음";
             let tradePostPrice = "가격 미정";
-            let tradePostImage = "/default-image.jpg";
+            let tradePostImage = "사진 없음";
             let tradeUserId = ""; // ✅ 판매자 ID 추가
             let tradeUserName = ""; // ✅ 게시물 주인 이름 추가
 
@@ -75,7 +76,7 @@ export default function ChatList() {
                 const tradeData = await tradeResponse.json();
                 tradePostTitle = tradeData.title || tradePostTitle;
                 tradePostPrice = tradeData.price || tradePostPrice;
-                tradePostImage = tradeData.imageUrl || tradePostImage;
+                tradePostImage = tradeData.thumbnailImage || tradePostImage;
                 tradeUserId = tradeData.writeUserId || ""; // ✅ 판매자 ID 가져오기
                 tradeUserName = tradeData.writeUserName || ""; // ✅ 판매자 이름 가져오기
                 console.log("📌 게시물 정보:", tradeData);
@@ -86,14 +87,15 @@ export default function ChatList() {
                 error
               );
             }
+            console.log(room);
 
             return {
               chatRoomId: room.id,
               lastMessage: room.lastMessage || "메시지가 없습니다.",
               updatedAt: room.lastMessageDateTime || "알 수 없음",
               opponentName: room.requestUserName,
-              opponentProfileImage:
-                room.requestUserProfileImage || "/default-profile.png",
+              opponentProfileImage: room.requestUserProfileImage || "",
+              tradeUserProfileImage: room.writeUserProfileImage || "",
               tradePostId: room.tradePostId,
               tradePostTitle,
               tradePostPrice,
@@ -160,7 +162,17 @@ export default function ChatList() {
               <div
                 className="w-12 h-12 rounded-3xl bg-center bg-cover bg-no-repeat flex-shrink-0"
                 style={{
-                  backgroundColor: "#d3d3d3",
+                  backgroundImage:
+                    room.tradeUserName === user?.name &&
+                    room.opponentProfileImage
+                      ? `url(${room.opponentProfileImage})`
+                      : room.tradeUserProfileImage
+                      ? `url(${room.tradeUserProfileImage})`
+                      : "none",
+                  backgroundColor:
+                    room.tradeUserProfileImage || room.opponentProfileImage
+                      ? "transparent"
+                      : "#d3d3d3",
                 }}
               ></div>
 
@@ -168,7 +180,7 @@ export default function ChatList() {
                 <div className="flex flex-row items-center gap-1">
                   {/* 상대방 이름 적용 */}
                   <span className="overflow-hidden text-ellipsis text-[#26220D] font-suit text-[1rem] font-semibold leading-[1.5rem] tracking-[-0.025rem]">
-                    {room.tradeUserName === user.name
+                    {room.tradeUserName === user?.name
                       ? room.opponentName
                       : room.tradeUserName}
                   </span>
