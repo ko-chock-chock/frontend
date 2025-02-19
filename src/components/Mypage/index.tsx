@@ -27,6 +27,7 @@ import { TokenStorage } from "@/components/auth/utils/tokenUtils";
 import BottomSheetModal, {
   BottomSheetMenuItem,
 } from "@/commons/BottomSheetModal";
+import { toast } from "react-hot-toast";
 
 export default function MypageComponent() {
   // 1️⃣ 컴포넌트 초기 설정
@@ -120,9 +121,17 @@ export default function MypageComponent() {
             throw new Error("상태 변경에 실패했습니다");
           }
 
+          // 여기에 탭 변경 로직 추가
+        setCurrentTab("게시완료");
+        
+        // URL 파라미터도 함께 업데이트
+        const searchParams = new URLSearchParams(window.location.search);
+        searchParams.set("tab", "게시완료");
+        const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
+        window.history.pushState({}, "", newUrl);
           await refresh();
           setIsBottomSheetOpen(false);
-          alert("게시완료로 변경되었습니다.");
+          toast.success("게시완료로 변경되었습니다.");
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : "상태 변경에 실패했습니다";
