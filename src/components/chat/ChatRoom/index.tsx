@@ -11,15 +11,17 @@ import { useUserStore } from "@/commons/store/userStore";
 import axiosInstance from "@/utils/axiosInstance";
 
 interface Message {
-  createdAt: string;
-  writeUserName(arg0: string, writeUserName: any): unknown;
-  message(arg0: string, message: any): unknown;
+  createdAt?: string;
+  writeUserName?: string;
+  message: string | { title: string; subtitle: string };
   chatRoomId: any;
   type: string; // 메시지 타입 ('text' 또는 'system')
   text?: string; // 일반 메시지 내용
-  time: string; // 시간
-  sender: string; // 발신자
-  senderId: number; // 발신자ID
+  time?: string; // 시간 지울예정
+  sender?: string; // 발신자 지울예정
+  senderId?: number; // 발신자ID 지울예정
+  writeUserProfileImage?: string;
+  writeUserId?: number | undefined;
   content?: { title: string; subtitle: string }; // 시스템 메시지의 추가 내용
 }
 
@@ -37,9 +39,14 @@ export default function ChatRoom() {
   const price = searchParams.get("price");
   const imageUrl = searchParams.get("imageUrl");
   const tradeUserId = searchParams.get("tradeUserId") || ""; // 🔥 게시물 ID 추가
-  const user = useUserStore((state) => state.user); // 로그인한 유저정보 가져옴
+  const user = useUserStore((state) => state.user) ?? { name: "", id: 0 }; // 로그인한 유저정보 가져옴
   const stompClientRef = useRef<Client | null>(null);
   const [messageType, setMessageType] = useState("TEXT"); // 메시지 타입 (TEXT, IMAGE 등)
+  const createdAt = new Date().toLocaleTimeString("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 
   useEffect(() => {
     console.log("📡 WebSocket 연결 시도 중...");
@@ -52,11 +59,8 @@ export default function ChatRoom() {
       onConnect: () => {
         console.log("✅ WebSocket 연결 성공!");
 
-        // 2️⃣ 서버와 메시지 주고받을 경로 설정
-        const subscribePath = `/topic/chat/${Number(roomId)}`;
-
         // 3️⃣ (메시지 수신 설정)
-        stompClient.subscribe(subscribePath, (message) => {
+        stompClient.subscribe(`/topic/chat/${Number(roomId)}`, (message) => {
           try {
             console.log("📩 메시지 수신됨:", message.body); // 메시지가 도착하는지 확인
             const receivedMessage = JSON.parse(message.body);
@@ -105,16 +109,7 @@ export default function ChatRoom() {
       );
   }, [roomId]);
 
-  // ✅ 채팅방 하단 자동 스크롤
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const onClickDetailBtn = () => {
-    setDetail((prev) => !prev); // 현재 상태를 반대로 변경 (토글 기능)
-  };
-
-  // ✅ 메시지 전송
+  // ✅ 메시지 전송하는 경우
   const sendMessage = () => {
     if (!inputValue.trim()) return; // 빈 메세지 방지
 
@@ -123,14 +118,11 @@ export default function ChatRoom() {
 
       type: messageType, // 메세지 타입
       message: inputValue, // 메세지 내용
-      createdAt: new Date().toLocaleTimeString([], {
-        // 보낸 시간
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      writeUserName: user.name, // 현재 로그인 사용자 이름
+
+      writeUserName: user?.name ?? "", // 현재 로그인 사용자 이름
       writeUserProfileImage: "",
-      writeUserId: user.id, // ✅ 로그인한 유저 ID
+      writeUserId: user?.id,
+      createdAt: "",
     };
     console.log("📤 메시지 전송:", chatMessage);
 
@@ -143,35 +135,50 @@ export default function ChatRoom() {
     } else {
       console.error("🚨 WebSocket 연결 안됨! 메시지 전송 실패");
     }
-
-    // setMessages((prev) => [...prev, chatMessage]); // 메시지 즉시 반영
     setInputValue("");
     inputRef.current?.focus();
+  };
+
+  // 산책 승인 메시지 전송하는 경우  - 메세지만 어떻게 나오게 시도하기 그럼 이거도 끝남
+  const onClickApprove = () => {
+    const walkMessage: Message = {
+      chatRoomId: Number(roomId),
+      type: "LOCATION",
+      message: "산책을 시작합니다.",
+      // {
+      //   title: "산책을 시작하려 해요!",
+      //   subtitle: "우리 반려동물의 위치를 확인해 보세요!",
+      // },
+      // createdAt: new Date().toLocaleTimeString([], {
+      //   hour: "2-digit",
+      //   minute: "2-digit",
+      // }),
+      writeUserId: user?.id,
+    };
+
+    if (stompClientRef.current && stompClientRef.current.connected) {
+      stompClientRef.current.publish({
+        destination: "/app/chat/send", // 🔥 이 부분이 서버에서 받는 경로야
+        body: JSON.stringify(walkMessage),
+      });
+      console.log("✅ 메시지 전송 성공!");
+    } else {
+      console.error("🚨 WebSocket 연결 안됨! 메시지 전송 실패");
+    }
+  };
+  // ✅ 채팅방 하단 자동 스크롤
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // 더보기 올리기
+  const onClickDetailBtn = () => {
+    setDetail((prev) => !prev); // 현재 상태를 반대로 변경 (토글 기능)
   };
 
   // 지도 페이지로 이동
   const onClickMap = () => {
     router.push("/map");
-  };
-
-  // 산책 승인 메시지 전송
-  const onClickApprove = () => {
-    const newMessage: Message = {
-      type: "system",
-      content: {
-        title: "산책을 시작하려 해요!",
-        subtitle: "우리 반려동물의 위치를 확인해 보세요!",
-      },
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      sender: "System",
-      senderId: 0,
-    };
-
-    // socket.emit("message", newMessage); // 서버로 메시지 전송
-    setMessages((prev) => [...prev, newMessage]); // 자신의 화면에 즉시 반영
   };
 
   console.log("📌 현재 방 정보:", {
@@ -222,7 +229,7 @@ export default function ChatRoom() {
                   : "justify-start"
               }`}
             >
-              {message.type === "system" ? (
+              {message.type === "LOCATION" ? ( // 산책 알림
                 <div className="w-full min-h-[120px] flex flex-col p-2 px-5 items-start gap-4 self-stretch border-l-[2.5px] border-[#72C655]">
                   <div className="flex flex-col self-stretch text-[#26220D] font-suit text-base font-medium leading-[1.5rem] tracking-[-0.025rem]">
                     <span>{message.content?.title}</span>
@@ -244,7 +251,10 @@ export default function ChatRoom() {
                   {/* 내가 보낸 메시지라면 시간은 왼쪽에 표시 */}
                   {(message.sender || message.writeUserName) === user.name && (
                     <span className="flex items-end min-w-[3.8125rem] mr-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
-                      {message.createdAt || "시간 없음"}
+                      {new Date(message.createdAt).toLocaleTimeString("ko-KR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </span>
                   )}
 
@@ -271,7 +281,10 @@ export default function ChatRoom() {
                   {/* 상대가 보낸 메세지라면 시간은 오른쪽에 표시 */}
                   {(message.sender || message.writeUserName) !== user.name && (
                     <span className="flex items-end min-w-[3.8125rem] ml-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
-                      {message.createdAt}
+                      {new Date(message.createdAt).toLocaleTimeString("ko-KR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </span>
                   )}
                 </>
