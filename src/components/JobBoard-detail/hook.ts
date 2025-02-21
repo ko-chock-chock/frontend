@@ -2,9 +2,7 @@
 import { useEffect, useState } from "react";
 import { BoardData, CheckLike } from "./types";
 import { useParams, useRouter } from "next/navigation";
-import axiosInstance from "@/utils/axiosInstance";
-import axios from "axios";
-// useRouter, axiosInstance 추가함.
+// useRouter 추가함.
 
 const useJobBoardDetail = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -108,12 +106,12 @@ const useJobBoardDetail = () => {
     const buyerId = getUserId();
     const sellerId = boardData?.writeUserId;
     const postId = boardId;
-    const token = getAccessToken(); // ✅ 수정된 함수로 토큰 가져오기
+    const token = getAccessToken();
 
     console.log("🛠️ buyerId:", buyerId);
     console.log("🛠️ sellerId:", sellerId);
     console.log("🛠️ postId:", postId);
-    console.log("🛠️ token:", token); // ✅ 콘솔에서 토큰 정상 출력되는지 확인
+    console.log("🛠️ token:", token);
 
     if (!buyerId || !sellerId || !postId || !token) {
       alert("유효한 요청이 아닙니다.");
@@ -121,25 +119,38 @@ const useJobBoardDetail = () => {
     }
 
     try {
-      const response = await axios.post(
-        `/api/trade/${postId}/chat-rooms`,
-        {
+      const response = await fetch(`/api/trade/${postId}/chat-rooms`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
           title: "거래 채팅방",
           tradePostId: postId,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }, // ✅ 토큰 추가
-        }
-      );
+        }),
+      });
 
-      if (response.status === 200) {
-        const chatRoomId = response.data;
-        console.log(`✅ 생성된 채팅방 ID: ${chatRoomId}`);
-        router.push(`/chatList/chatRoom?roomId=${chatRoomId}`);
-      } else {
-        console.error("❌ 채팅방 생성 실패:", response.data.message);
+      console.log("📩 서버 응답 상태 코드:", response.status);
+
+      if (!response.ok) {
+        console.error("❌ 채팅방 생성 실패:", response.status);
         alert("채팅방을 생성할 수 없습니다.");
+        return;
       }
+
+      // ✅ 응답이 JSON인지 확인
+      const contentType = response.headers.get("content-type");
+      let data;
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json(); // JSON 형식이면 파싱
+      } else {
+        data = await response.text(); // 텍스트 응답 처리
+      }
+
+      console.log("📩 서버 응답 데이터:", data);
+
+      router.push(`/chatList`);
     } catch (error) {
       console.error("🚨 API 오류:", error);
       alert("채팅방 생성 중 오류가 발생했습니다.");
