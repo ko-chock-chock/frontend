@@ -113,7 +113,7 @@ const useJobBoardDetail = () => {
     console.log("🛠️ postId:", postId);
     console.log("🛠️ token:", token);
 
-    if (!buyerId || !sellerId || !postId || !token) {
+    if (!buyerId || !sellerId || !postId || !token || buyerId === sellerId) {
       alert("유효한 요청이 아닙니다.");
       return;
     }
@@ -149,8 +149,11 @@ const useJobBoardDetail = () => {
       }
 
       console.log("📩 서버 응답 데이터:", data);
+      const chatRoomId = data.chatRoomId; // 생성된 채팅방 ID
+      console.log("생성된 채팅방 ID:", chatRoomId);
 
-      router.push(`/chatList`);
+      // router.push(`/jobList/${postId}/${chatRoomId}`); 백엔드가 채팅 룸의 ID를 반환해준다면 가능해짐.
+      router.push(`/chatList/`);
     } catch (error) {
       console.error("🚨 API 오류:", error);
       alert("채팅방 생성 중 오류가 발생했습니다.");

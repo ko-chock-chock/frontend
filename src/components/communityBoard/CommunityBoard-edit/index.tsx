@@ -5,6 +5,12 @@ import Input from "@/commons/input";
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 
+interface EditPost {
+  title: string;
+  content: string;
+  images: string[];
+}
+
 // ✅ 기존 게시글 불러오는 API 함수
 const getPostById = async (postId: number) => {
   try {
@@ -93,7 +99,11 @@ const CommunityBoardEdit = () => {
   const [contents, setContents] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [post, setPost] = useState<any>(null);
+  const [post, setPost] = useState<EditPost>({
+    title: "",
+    content: "",
+    images: [],
+  });
   const router = useRouter();
 
   useEffect(() => {
