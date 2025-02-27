@@ -26,11 +26,13 @@ export default function Comment() {
   const params = useParams<{ boardId: string }>();
   const postId = Number(params?.boardId); // postId를 숫자로 변환
   const [bookmarkToggle, setBookmarkToggle] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [bookmarkCount, setBookmarkCount] = useState(0); // ✅ 북마크 개수 상태 추가
   const [inputValue, setInputValue] = useState(""); // 입력 필드 상태
   const [comments, setComments] = useState<Comment[]>([]); // ✅ useState로 상태 관리
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isReplying, setIsReplying] = useState(false); // 대댓글 입력창 표시 여부
   const replyContainerRef = useRef<HTMLDivElement>(null); // ✅ 스크롤을 위한 div 참조
 

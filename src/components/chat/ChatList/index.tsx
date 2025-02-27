@@ -31,6 +31,7 @@ interface TradePost {
 }
 
 interface ChatRoomApiResponse {
+  writeUserProfileImage: string;
   id: string;
   lastMessage?: string;
   lastMessageDateTime?: string;
@@ -116,7 +117,7 @@ export default function ChatList() {
               updatedAt: room.lastMessageDateTime || "알 수 없음",
               opponentName: room.requestUserName,
               opponentProfileImage: room.requestUserProfileImage || "",
-              tradeUserProfileImage: room.requestUserProfileImage || "",
+              tradeUserProfileImage: room.writeUserProfileImage || "",
               tradePostId: room.tradePostId,
               tradePostTitle,
               tradePostPrice,

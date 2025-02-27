@@ -99,6 +99,7 @@ const CommunityBoardEdit = () => {
   const [contents, setContents] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [post, setPost] = useState<EditPost>({
     title: "",
     content: "",

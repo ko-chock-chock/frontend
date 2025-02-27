@@ -17,10 +17,11 @@ interface Message {
   createdAt?: string;
   writeUserName?: string;
   message: string;
-  chatRoomId: number;
-  type: string;
+  chatRoomId: any;
+  type: string; // 메시지 타입 ('text' 또는 'system')
+  text?: string; // 일반 메시지 내용
   writeUserProfileImage?: string;
-  writeUserId?: number;
+  writeUserId?: number | undefined;
 }
 
 export default function ChatRoom() {
@@ -112,11 +113,12 @@ export default function ChatRoom() {
   // ✅ 이전 채팅 메시지 불러오기
   useEffect(() => {
     const fetchChatMessages = async () => {
-      const response = await fetchData(
+      // ✅ fetchData 호출 시 제네릭으로 `ChatMessage[]` 지정
+      const response = await fetchData<Message[]>(
         `/api/trade/${postId}/chat-rooms/${roomId}/messages`
       );
 
-      if (response.success) {
+      if (response.success && response.data) {
         setMessages(response.data.reverse()); // ✅ 최신 메시지가 아래로 정렬되도록 수정
       } else {
         console.error("❌ 채팅 내역 불러오기 실패:", response.message);

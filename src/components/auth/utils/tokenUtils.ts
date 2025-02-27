@@ -2,22 +2,22 @@
 
 /**
  * JWT 토큰 관리 유틸리티
- * 
-  * @description
+ *
+ * @description
  * 클라이언트 사이드에서 JWT 토큰을 안전하고 효율적으로 관리하기 위한 종합 유틸리티
- * 
-* 주요 기능:
+ *
+ * 주요 기능:
  * 1. 로컬 스토리지 기반 토큰 관리
  * 2. 토큰 만료 자동 감지 및 갱신
  * 3. 보안 강화를 위한 상세 로깅
  * 4. 토큰 갱신 시도 제한
  * 5. 사용자 인증 상태 종합 관리
- * 
+ *
  * 보안 설계 원칙:
  * - 최소 권한 원칙
  * - 안전한 토큰 저장
  * - 상세한 보안 이벤트 추적
- * 
+ *
  * @description
  * - 토큰 갱신 프로세스의 안전성과 투명성 확보
  * - 상세한 로깅을 통한 토큰 관리 모니터링
@@ -35,13 +35,13 @@ import { useUserStore } from "@/commons/store/userStore";
 
 // 토큰 갱신 설정 상수 - 보안 및 성능 제어
 const TOKEN_REFRESH_CONFIG = {
-  MAX_ATTEMPTS: 3,             // 최대 토큰 갱신 시도 횟수 (무한 재시도 방지)
-  RESET_INTERVAL: 5 * 60 * 1000 // 갱신 시도 횟수 초기화 간격 (5분)
+  MAX_ATTEMPTS: 3, // 최대 토큰 갱신 시도 횟수 (무한 재시도 방지)
+  RESET_INTERVAL: 5 * 60 * 1000, // 갱신 시도 횟수 초기화 간격 (5분)
 };
 
 /**
  * 토큰의 남은 시간을 사람이 읽기 쉬운 형식으로 계산
- * 
+ *
  * @param token JWT 토큰
  * @returns 남은 시간 문자열 (예: "10분 30초")
  * @throws 토큰 파싱 중 오류 발생 시 "알 수 없음" 반환
@@ -64,18 +64,18 @@ const calculateRemainingTokenTime = (token: string): string => {
 
 // 토큰 갱신 상태 추적을 위한 상태 객체
 const tokenRefreshState: TokenRefreshState = {
-  lastAttemptTime: 0,          // 마지막 갱신 시도 시간
-  failedAttempts: 0,           // 갱신 실패 횟수
-  successAttempts: 0,          // 갱신 성공 횟수
-  lastSuccessTokenInfo: undefined // 마지막 성공적인 토큰 갱신 정보
+  lastAttemptTime: 0, // 마지막 갱신 시도 시간
+  failedAttempts: 0, // 갱신 실패 횟수
+  successAttempts: 0, // 갱신 성공 횟수
+  lastSuccessTokenInfo: undefined, // 마지막 성공적인 토큰 갱신 정보
 };
 
 /**
  * 보안 관련 이벤트를 로깅하는 함수
- * 
+ *
  * @param eventType 보안 이벤트 유형
  * @param details 이벤트 상세 정보
- * @description 
+ * @description
  * - 모든 보안 관련 이벤트를 콘솔에 기록
  * - 중요한 보안 이벤트는 경고 레벨로 로깅
  */
@@ -86,7 +86,7 @@ const logSecurityEvent = (eventType: string, details: SecurityEventDetails) => {
   };
 
   console.log("[Token Security Event]", logData);
-// 심각한 보안 이벤트에 대해 경고 로깅
+  // 심각한 보안 이벤트에 대해 경고 로깅
   if (
     eventType.includes("TOKEN_REFRESH_LIMIT_EXCEEDED") ||
     eventType.includes("TOKEN_REFRESH_FAILED") ||
@@ -119,7 +119,7 @@ export const createExpiredToken = (originalToken: string): string => {
 export const TokenStorage = {
   /**
    * 토큰을 로컬 스토리지에 안전하게 저장
-   * 
+   *
    * @param tokens 액세스 및 리프레시 토큰
    * @throws 토큰 저장 중 오류 발생 시 예외 처리
    */
@@ -220,14 +220,20 @@ export const TokenStorage = {
       console.log("[Token] 만료 상태 확인:", {
         현재시간: new Date(currentTimeSeconds * 1000).toISOString(),
         만료시간: new Date(expTimeSeconds * 1000).toISOString(),
-        남은시간: `${Math.floor(remainingSeconds / 60)}분 ${remainingSeconds % 60}초`,
-        상태: remainingSeconds <= 0 ? '만료됨' : 
-              remainingSeconds <= 300 ? '만료 임박' : '유효함',
+        남은시간: `${Math.floor(remainingSeconds / 60)}분 ${
+          remainingSeconds % 60
+        }초`,
+        상태:
+          remainingSeconds <= 0
+            ? "만료됨"
+            : remainingSeconds <= 300
+            ? "만료 임박"
+            : "유효함",
         상세정보: {
           현재타임스탬프: currentTimeSeconds,
           만료타임스탬프: expTimeSeconds,
-          남은초: remainingSeconds
-        }
+          남은초: remainingSeconds,
+        },
       });
 
       return remainingSeconds <= 0;
@@ -240,7 +246,7 @@ export const TokenStorage = {
 
 /**
  * 액세스 토큰 자동 갱신 함수
- * 
+ *
  * @returns 새로 발급된 액세스 토큰 또는 null
  * @description
  * - 토큰 갱신 최대 시도 횟수 제한
@@ -249,32 +255,32 @@ export const TokenStorage = {
  */
 export const refreshAccessToken = async (): Promise<string | null> => {
   const currentTime = Date.now();
- 
+
   // 최대 갱신 시도 횟수 초과 시 보안 처리
   if (tokenRefreshState.failedAttempts >= TOKEN_REFRESH_CONFIG.MAX_ATTEMPTS) {
-    console.warn('[Token] 토큰 갱신 최대 실패 횟수 초과');
-    
+    console.warn("[Token] 토큰 갱신 최대 실패 횟수 초과");
+
     logSecurityEvent("TOKEN_REFRESH_LIMIT_EXCEEDED", {
       message: "토큰 갱신 최대 실패 횟수 초과",
       timestamp: new Date(currentTime).toISOString(),
     });
- 
+
     TokenStorage.clearTokens(); // 토큰 초기화
-    window.location.href = '/login'; // 로그인 페이지로 리다이렉트
+    window.location.href = "/login"; // 로그인 페이지로 리다이렉트
     return null;
   }
- 
+
   try {
     const tokens = TokenStorage.getTokens();
     if (!tokens?.refreshToken) {
       console.log("[Token] RefreshToken 없음");
-      
+
       tokenRefreshState.failedAttempts++;
       tokenRefreshState.lastAttemptTime = currentTime;
-      
+
       return null;
     }
- 
+
     // 토큰 갱신 API 요청
     const response = await fetch(
       `/api/users/refresh-token?refreshToken=${tokens.refreshToken}`,
@@ -286,61 +292,61 @@ export const refreshAccessToken = async (): Promise<string | null> => {
         },
       }
     );
- 
+
     // 토큰 갱신 실패 처리
     if (!response.ok) {
       console.error("[Token] 토큰 갱신 실패");
-      
+
       tokenRefreshState.failedAttempts++;
       tokenRefreshState.lastAttemptTime = currentTime;
-      
+
       logSecurityEvent("TOKEN_REFRESH_FAILED", {
         responseStatus: response.status,
         timestamp: new Date(currentTime).toISOString(),
       });
-      
+
       return null;
     }
- 
+
     // 토큰 갱신 성공 처리
     const newAccessToken = await response.text();
-    
+
     // 성공 이력 추적 및 로깅
     tokenRefreshState.successAttempts++;
     tokenRefreshState.lastSuccessTokenInfo = {
-      timestamp: new Date(currentTime).toISOString()
+      timestamp: new Date(currentTime).toISOString(),
     };
-    
-    console.log('🔓 새로운 토큰으로 갱신 성공!', {
-      메시지: '보안 토큰이 성공적으로 재발급되었습니다.',
+
+    console.log("🔓 새로운 토큰으로 갱신 성공!", {
+      메시지: "보안 토큰이 성공적으로 재발급되었습니다.",
       토큰_상세_정보: {
         총_성공_횟수: tokenRefreshState.successAttempts,
         마지막_갱신_시간: tokenRefreshState.lastSuccessTokenInfo.timestamp,
-        갱신한_토큰의_남은_시간: calculateRemainingTokenTime(newAccessToken)
-      }
+        갱신한_토큰의_남은_시간: calculateRemainingTokenTime(newAccessToken),
+      },
     });
- 
+
     // 실패 횟수 초기화
     tokenRefreshState.failedAttempts = 0;
     tokenRefreshState.lastAttemptTime = currentTime;
- 
+
     TokenStorage.setTokens({
       accessToken: newAccessToken,
       refreshToken: tokens.refreshToken,
     });
- 
+
     return newAccessToken;
   } catch (error) {
     console.error("[Token] 토큰 갱신 중 에러");
-    
+
     tokenRefreshState.failedAttempts++;
     tokenRefreshState.lastAttemptTime = currentTime;
-    
+
     logSecurityEvent("TOKEN_REFRESH_ERROR", {
       errorMessage: error instanceof Error ? error.message : "알 수 없는 오류",
       timestamp: new Date(currentTime).toISOString(),
     });
-    
+
     return null;
   }
 };
@@ -464,43 +470,43 @@ export const authenticatedFetch = async (
       timestamp: new Date().toISOString(),
     });
 
-if (response.status === 401 && retryCount > 0) {
-  console.log("[Auth] 401 응답, 토큰 갱신 후 재시도");
-  const newToken = await refreshAccessToken();
+    if (response.status === 401 && retryCount > 0) {
+      console.log("[Auth] 401 응답, 토큰 갱신 후 재시도");
+      const newToken = await refreshAccessToken();
 
-  if (newToken) {
-    return authenticatedFetch(url, options, retryCount - 1);
-  } else {
-    window.location.href = "/login";
-    throw new Error("세션이 만료되었습니다.");
+      if (newToken) {
+        return authenticatedFetch(url, options, retryCount - 1);
+      } else {
+        window.location.href = "/login";
+        throw new Error("세션이 만료되었습니다.");
+      }
+    }
+
+    return response;
+  } catch (error) {
+    console.error("[Auth] Request failed:", error);
+    throw error;
   }
-}
-
-return response;
-} catch (error) {
-console.error("[Auth] Request failed:", error);
-throw error;
-}
 };
 
 /**
-* 인증 응답 처리 함수
-*
-* @param response 인증 응답 데이터
-* @returns 추출된 사용자 ID 또는 null
-*/
+ * 인증 응답 처리 함수
+ *
+ * @param response 인증 응답 데이터
+ * @returns 추출된 사용자 ID 또는 null
+ */
 export const handleAuthResponse = (response: AuthResponse) => {
-try {
-if (response.accessToken) {
-  TokenStorage.setTokens({
-    accessToken: response.accessToken,
-    refreshToken: response.refreshToken,
-  });
-  return extractUserIdFromToken(response.accessToken);
-}
-return null;
-} catch (error) {
-console.error("[Auth] 응답 처리 실패:", error);
-return null;
-}
+  try {
+    if (response.accessToken) {
+      TokenStorage.setTokens({
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+      });
+      return extractUserIdFromToken(response.accessToken);
+    }
+    return null;
+  } catch (error) {
+    console.error("[Auth] 응답 처리 실패:", error);
+    return null;
+  }
 };

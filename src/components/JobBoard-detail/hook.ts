@@ -149,8 +149,6 @@ const useJobBoardDetail = () => {
       }
 
       console.log("📩 서버 응답 데이터:", data);
-      const chatRoomId = data.chatRoomId; // 생성된 채팅방 ID
-      console.log("생성된 채팅방 ID:", chatRoomId);
 
       // router.push(`/jobList/${postId}/${chatRoomId}`); 백엔드가 채팅 룸의 ID를 반환해준다면 가능해짐.
       router.push(`/chatList/`);
