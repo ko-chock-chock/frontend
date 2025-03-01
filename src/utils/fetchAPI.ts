@@ -1,4 +1,4 @@
-// ✅ 엑세스 토큰 가져오기
+// ✅ 액세스 토큰 가져오기
 const getAccessToken = (): string | null => {
   const tokenStorageStr = localStorage.getItem("token-storage");
   if (!tokenStorageStr) return null;
@@ -6,26 +6,26 @@ const getAccessToken = (): string | null => {
   return tokenData?.accessToken || null;
 };
 
-// ✅ 현재 로그인한 사용자 ID 가져오기
-const getUserId = (): number | null => {
-  const userStorageStr = localStorage.getItem("user-storage");
-  if (!userStorageStr) return null;
+// ✅ 현재 로그인한 사용자 ID 가져오기 - 안써서 잠시 주석
+// const getUserId = (): number | null => {
+//   const userStorageStr = localStorage.getItem("user-storage");
+//   if (!userStorageStr) return null;
 
-  try {
-    const userStorageData = JSON.parse(userStorageStr);
-    return userStorageData?.state?.user?.id || null;
-  } catch (error) {
-    console.error("❌ 유저 ID 파싱 실패:", error);
-    return null;
-  }
-};
+//   try {
+//     const userStorageData = JSON.parse(userStorageStr);
+//     return userStorageData?.state?.user?.id || null;
+//   } catch (error) {
+//     console.error("❌ 유저 ID 파싱 실패:", error);
+//     return null;
+//   }
+// };
 
-// ✅ 공통 Fetch API 함수
-export const fetchAPI = async (
+// ✅ 공통 Fetch API 함수 (제네릭 활용)
+export const fetchAPI = async <T>(
   url: string,
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
-  body?: any
-) => {
+  body?: Record<string, unknown>
+): Promise<{ success: boolean; data?: T; message?: string }> => {
   const token = getAccessToken();
   if (!token) {
     console.warn("🚨 인증 토큰 없음! 요청이 거부될 수 있음");
@@ -47,7 +47,8 @@ export const fetchAPI = async (
       throw new Error(errorData.message || "서버 요청 실패");
     }
 
-    return { success: true, data: await response.json() };
+    const responseData: T = await response.json();
+    return { success: true, data: responseData };
   } catch (error) {
     console.error("❌ API 요청 실패:", error);
     return {
@@ -58,21 +59,31 @@ export const fetchAPI = async (
 };
 
 // ✅ 데이터 가져오기 (GET)
-export const fetchData = async (url: string) => {
-  return fetchAPI(url, "GET");
+export const fetchData = async <T>(
+  url: string
+): Promise<{ success: boolean; data?: T; message?: string }> => {
+  return fetchAPI<T>(url, "GET");
 };
 
 // ✅ 데이터 생성하기 (POST)
-export const postData = async (url: string, body: any) => {
-  return fetchAPI(url, "POST", body);
+export const postData = async <T>(
+  url: string,
+  body: Record<string, unknown>
+): Promise<{ success: boolean; data?: T; message?: string }> => {
+  return fetchAPI<T>(url, "POST", body);
 };
 
 // ✅ 데이터 수정하기 (PUT)
-export const putData = async (url: string, body: any) => {
-  return fetchAPI(url, "PUT", body);
+export const putData = async <T>(
+  url: string,
+  body: Record<string, unknown>
+): Promise<{ success: boolean; data?: T; message?: string }> => {
+  return fetchAPI<T>(url, "PUT", body);
 };
 
 // ✅ 데이터 삭제하기 (DELETE)
-export const deleteData = async (url: string) => {
-  return fetchAPI(url, "DELETE");
+export const deleteData = async <T>(
+  url: string
+): Promise<{ success: boolean; data?: T; message?: string }> => {
+  return fetchAPI<T>(url, "DELETE");
 };

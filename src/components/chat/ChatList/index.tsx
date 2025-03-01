@@ -6,9 +6,6 @@ import { useUserStore } from "@/commons/store/userStore";
 import Image from "next/image";
 
 interface ChatRoom {
-  tradeUserId: string;
-  tradeUserName: string;
-  tradeUserImage: string;
   chatRoomId: string;
   lastMessage: string;
   updatedAt: string;
@@ -19,6 +16,28 @@ interface ChatRoom {
   tradePostTitle?: string;
   tradePostPrice?: string;
   tradePostImage?: string;
+  tradeUserId: string;
+  tradeUserName: string;
+  tradeUserImage: string;
+}
+
+interface TradePost {
+  title: string;
+  price: string;
+  thumbnailImage: string;
+  writeUserId: string;
+  writeUserName: string;
+  writeUserProfileImage: string;
+}
+
+interface ChatRoomApiResponse {
+  writeUserProfileImage: string;
+  id: string;
+  lastMessage?: string;
+  lastMessageDateTime?: string;
+  requestUserName: string;
+  requestUserProfileImage?: string;
+  tradePostId: number;
 }
 
 export default function ChatList() {
@@ -49,18 +68,19 @@ export default function ChatList() {
 
         if (!response.ok) throw new Error("채팅방 목록 불러오기 실패");
 
-        const data = await response.json();
+        const data: ChatRoomApiResponse[] = await response.json();
         console.log("📌 채팅방 목록:", data);
 
         // 🔥 각 채팅방의 게시물 정보 가져오기
         const chatRoomsWithTradeInfo = await Promise.all(
-          data.map(async (room: any) => {
+          data.map(async (room: ChatRoomApiResponse) => {
             let tradePostTitle = "제목 없음";
             let tradePostPrice = "가격 미정";
             let tradePostImage = "사진 없음";
-            let tradeUserId = ""; // ✅ 판매자 ID 추가
-            let tradeUserName = ""; // ✅ 게시물 주인 이름 추가
+            let tradeUserId = "";
+            let tradeUserName = "";
             let tradeUserImage = "";
+
             try {
               const tradeResponse = await fetch(
                 `/api/trade/${room.tradePostId}`,
@@ -74,13 +94,14 @@ export default function ChatList() {
               );
 
               if (tradeResponse.ok) {
-                const tradeData = await tradeResponse.json();
+                const tradeData: TradePost = await tradeResponse.json();
                 tradePostTitle = tradeData.title || tradePostTitle;
                 tradePostPrice = tradeData.price || tradePostPrice;
                 tradePostImage = tradeData.thumbnailImage || tradePostImage;
-                tradeUserId = tradeData.writeUserId || ""; // ✅ 판매자 ID 가져오기
-                tradeUserName = tradeData.writeUserName || ""; // ✅ 판매자 이름 가져오기
-                tradeUserImage = tradeData.writeUserProfileImage || ""; //판매자 프로필 이미지
+                tradeUserId = tradeData.writeUserId || "";
+                tradeUserName = tradeData.writeUserName || "";
+                tradeUserImage = tradeData.writeUserProfileImage || "";
+
                 console.log("📌 게시물 정보:", tradeData);
               }
             } catch (error) {
@@ -89,8 +110,6 @@ export default function ChatList() {
                 error
               );
             }
-
-            console.log(room);
 
             return {
               chatRoomId: room.id,
@@ -103,7 +122,7 @@ export default function ChatList() {
               tradePostTitle,
               tradePostPrice,
               tradePostImage,
-              tradeUserId, // ✅ 판매자 ID 추가
+              tradeUserId,
               tradeUserName,
               tradeUserImage,
             };
@@ -159,15 +178,7 @@ export default function ChatList() {
   };
 
   const enterChatRoom = (room: ChatRoom) => {
-    const url = `/chatList/chatRoom?roomId=${room.chatRoomId}
-    &postId=${room.tradePostId}
-    &tradeUserId=${room.tradeUserId || ""}
-    &tradeUserImage=${room.tradeUserProfileImage || ""}
-    &title=${encodeURIComponent(
-      room.tradePostTitle || ""
-    )}&price=${encodeURIComponent(
-      room.tradePostPrice || ""
-    )}&imageUrl=${encodeURIComponent(room.tradePostImage || "")}`;
+    const url = `/jobList/${room.tradePostId}/${room.chatRoomId}`;
 
     router.push(url);
   };
