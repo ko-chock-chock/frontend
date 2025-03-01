@@ -9,6 +9,21 @@ import "swiper/css/pagination";
 import { useEffect, useState } from "react";
 import Comment from "./Comment";
 
+interface CommunityPostDetail {
+  id: number;
+  title: string;
+  contents: string;
+  createdAt: string;
+  updatedAt: string;
+  viewCount: number;
+  bookmarkCount: number;
+  commentCount: number;
+  images: string[];
+  writeUserId: number;
+  writeUserName: string;
+  writeUserProfileImage?: string;
+}
+
 // // ✅ 토큰 가져오기 함수
 const getAccessToken = (): string | null => {
   const tokenStorageStr = localStorage.getItem("token-storage");
@@ -52,7 +67,7 @@ const CommunityBoardDetail = ({
     boardId: string;
   };
 }) => {
-  const [post, setPost] = useState<any>(null);
+  const [post, setPost] = useState<CommunityPostDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,7 +115,7 @@ const CommunityBoardDetail = ({
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col">
       {/* 상단 이미지 */}
       <div className="relative w-full h-[23.4375rem]">
         <Swiper

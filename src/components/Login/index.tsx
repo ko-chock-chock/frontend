@@ -3,19 +3,19 @@
 
 /**
  * 로그인 컴포넌트
- * 
+ *
  * 주요 기능:
  * - 이메일/비밀번호 기반 로그인
  * - 폼 유효성 검증
  * - 에러 메시지 표시
  * - 로딩 상태 처리
- * 
+ *
  * 수정사항 (2024.02.04):
  * 1. 레이아웃 구조 변경 (fixed positioning 활용)
  * 2. 스타일 시스템 적용 (globals.css, tailwind.config 활용)
  * 3. px to rem 변환 적용
  * 4. Input, Button 컴포넌트 스타일 최적화
- * 
+ *
  * 수정사항 (2024.02.16):
  * 1. 에러 메시지 처리 로직 개선
  * 2. 입력 필드 변경 시 에러 메시지 초기화
@@ -33,8 +33,12 @@ import type { LoginFormData, LoginFormField } from "./types";
 
 export default function LoginComponent() {
   const router = useRouter();
-  const { form, isLoading, onSubmit, loginMessage, setLoginMessage } = useLogin();
-  const { formState: { errors, isValid }, control } = form;
+  const { form, isLoading, onSubmit, loginMessage, setLoginMessage } =
+    useLogin();
+  const {
+    formState: { errors, isValid },
+    control,
+  } = form;
 
   return (
     // 전체 화면 고정 컨테이너
@@ -45,16 +49,19 @@ export default function LoginComponent() {
         <div className="flex items-center flex-col w-full gap-[3.75rem]">
           {/* 로고 영역 */}
           <div className="w-[12.5625rem] h-[7.875rem]">
-            <Image 
-              src={Logo} 
-              alt="logo" 
-              priority 
+            <Image
+              src={Logo}
+              alt="logo"
+              priority
               className="w-full h-full object-contain"
             />
           </div>
 
           {/* 폼 영역 */}
-          <form onSubmit={onSubmit} className="w-full flex flex-col gap-[1.75rem]">
+          <form
+            onSubmit={onSubmit}
+            className="w-full flex flex-col gap-[1.75rem]"
+          >
             {/* 이메일 입력 */}
             <Controller<LoginFormData>
               name="email"
@@ -107,9 +114,9 @@ export default function LoginComponent() {
             )}
 
             {/* 로그인 버튼 */}
-            <Button 
-              design="design1" 
-              type="submit" 
+            <Button
+              design="design1"
+              type="submit"
               disabled={!isValid || isLoading}
               className="text-base-bold"
             >

@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-export default function CommunityBoardItem({ post }: { post: any }) {
+import { CommunityPost } from "@/components/communityBoard/CommunityBoard-list/type";
+
+export default function CommunityBoardItem({ post }: { post: CommunityPost }) {
   return (
     <>
       {/* Post Items */}
