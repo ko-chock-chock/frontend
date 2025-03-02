@@ -138,23 +138,29 @@ const CommunityBoardEdit = () => {
   const handleImageUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       console.log("📸 파일 선택 이벤트 발생"); // ✅ 여기 로그 찍히는지 확인
-      console.log("📸 파일 선택됨:", e.target.files); // ✅ 파일 선택 이벤트 확인
       if (e.target.files && e.target.files.length > 0) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
+        const files = Array.from(e.target.files); // ✅ 여러 개의 파일을 배열로 변환
+        console.log("📸 선택된 파일들:", files);
 
-        reader.onloadend = () => {
-          if (typeof reader.result === "string") {
-            console.log("📸 새 이미지 추가됨:", reader.result);
-            setImages((prevImages) => [...prevImages, reader.result as string]);
-          }
-        };
+        files.forEach((file) => {
+          const reader = new FileReader();
 
-        reader.readAsDataURL(file);
+          reader.onloadend = () => {
+            if (typeof reader.result === "string") {
+              console.log("📸 새 이미지 추가됨:", reader.result);
+              setImages((prevImages) => [
+                ...prevImages,
+                reader.result as string,
+              ]);
+            }
+          };
+
+          reader.readAsDataURL(file);
+        });
       }
     },
     []
-  ); // ✅ 의존성 배열을 빈 배열로 설정하여 함수가 재생성되지 않도록 함
+  );
 
   // ✅ 게시글 수정 API 함수 (컴포넌트 내부에서 상태 접근)
   const updatePost = useCallback(async () => {

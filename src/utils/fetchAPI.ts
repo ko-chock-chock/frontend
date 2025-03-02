@@ -31,8 +31,12 @@ export const fetchAPI = async <T>(
     console.warn("🚨 인증 토큰 없음! 요청이 거부될 수 있음");
   }
 
+  // ✅ 현재 환경에 맞는 프로토콜 설정 (HTTPS 환경이면 'https', HTTP 환경이면 'http')
+  const httpProtocol = window.location.protocol === "https:" ? "https" : "http";
+  const baseUrl = `${httpProtocol}://3.36.40.240:8001${url}`;
+
   try {
-    const response = await fetch(`http://3.36.40.240:8001${url}`, {
+    const response = await fetch(baseUrl, {
       method,
       headers: {
         Authorization: `Bearer ${token}`,

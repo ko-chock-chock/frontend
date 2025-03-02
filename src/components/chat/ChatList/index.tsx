@@ -44,12 +44,10 @@ export default function ChatList() {
   const user = useUserStore((state) => state.user);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const router = useRouter();
-  const userId = user?.id;
 
   useEffect(() => {
     const fetchChatRooms = async () => {
       try {
-        console.log("📌 요청하는 userId:", userId);
         const tokenStorageStr = localStorage.getItem("token-storage");
         if (!tokenStorageStr) throw new Error("토큰이 없습니다.");
 
@@ -114,7 +112,7 @@ export default function ChatList() {
             return {
               chatRoomId: room.id,
               lastMessage: room.lastMessage || "채팅을 시작해 보세요!",
-              updatedAt: room.lastMessageDateTime || "알 수 없음",
+              updatedAt: room.lastMessageDateTime || "시작하지 않은 채팅",
               opponentName: room.requestUserName,
               opponentProfileImage: room.requestUserProfileImage || "",
               tradeUserProfileImage: room.writeUserProfileImage || "",
@@ -141,6 +139,10 @@ export default function ChatList() {
   const deleteChatRoom = async (postId: number, chatRoomId: string) => {
     try {
       console.log("🗑️ 채팅방 삭제 요청:", { postId, chatRoomId });
+
+      // ✅ 삭제 확인 (선택 사항)
+      const confirmDelete = confirm("정말로 삭제하시겠습니까?");
+      if (!confirmDelete) return;
 
       // 1️⃣ 저장된 토큰 가져오기
       const tokenStorageStr = localStorage.getItem("token-storage");
@@ -193,72 +195,105 @@ export default function ChatList() {
     });
   }
 
+  // 마지막 채팅시간 관련 함수
+  const formatChatTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+
+    const isToday =
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate();
+
+    if (isToday) {
+      return date.toLocaleTimeString("ko-KR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false, // 24시간 형식
+      });
+    }
+
+    return date
+      .toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+      .replace(/-/g, "."); // YYYY.MM.DD 형식
+  };
+
   return (
     <div className="p-4">
       {chatRooms.length === 0 ? (
         <p className="text-center text-gray-500 mt-5">💬 채팅방이 없습니다.</p>
       ) : (
-        chatRooms.map((room) => (
-          <div
-            key={room.chatRoomId}
-            className="flex p-4 px-5 justify-between items-start self-stretch backdrop-blur-[2px] cursor-pointer hover:bg-gray-100"
-            onClick={() => enterChatRoom(room)}
-          >
-            <div className="flex">
-              {/* 프로필 이미지 적용 */}
-              <div
-                className="w-12 h-12 rounded-3xl bg-center bg-cover bg-no-repeat flex-shrink-0"
-                style={{
-                  backgroundImage:
-                    room.tradeUserName === user?.name
-                      ? room.opponentProfileImage
-                        ? `url(${room.opponentProfileImage})`
-                        : "none"
-                      : room.tradeUserProfileImage
-                      ? `url(${room.tradeUserProfileImage})`
-                      : "none",
-                  backgroundColor: "#d3d3d3", // ✅ 상대방 프로필이 없으면 회색 배경 적용
-                }}
-              ></div>
+        chatRooms //
+          .slice()
+          .sort(
+            (a, b) =>
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          )
+          .map((room) => (
+            <div
+              key={room.chatRoomId}
+              className="flex p-4 px-5 justify-between items-start self-stretch backdrop-blur-[2px] cursor-pointer hover:bg-gray-100"
+              onClick={() => enterChatRoom(room)}
+            >
+              <div className="flex">
+                {/* 프로필 이미지 적용 */}
+                <div
+                  className="w-12 h-12 rounded-3xl bg-center bg-cover bg-no-repeat flex-shrink-0"
+                  style={{
+                    backgroundImage:
+                      room.tradeUserName === user?.name
+                        ? room.opponentProfileImage
+                          ? `url(${room.opponentProfileImage})`
+                          : "none"
+                        : room.tradeUserProfileImage
+                        ? `url(${room.tradeUserProfileImage})`
+                        : "none",
+                    backgroundColor: "#d3d3d3", // ✅ 상대방 프로필이 없으면 회색 배경 적용
+                  }}
+                ></div>
 
-              <div className="ml-[1rem] mr-[0.5rem]">
-                <div className="flex flex-row items-center gap-1">
-                  {/* 상대방 이름 적용 */}
-                  <span className="overflow-hidden text-ellipsis text-[#26220D] font-suit text-[1rem] font-semibold leading-[1.5rem] tracking-[-0.025rem]">
-                    {room.tradeUserName === user?.name
-                      ? room.opponentName
-                      : room.tradeUserName}
-                  </span>
-                  <span> ・ </span>
-                  {/* 마지막 메시지 시간 적용 */}
-                  <span className="text-[#545245] text-xs font-normal leading-[1.125rem] tracking-[-0.01875rem] font-suit">
-                    {room.updatedAt}
-                  </span>
-                </div>
-                <div>
-                  {/* 마지막 메시지 적용 */}
-                  <p className="max-w-[10.625rem] truncate overflow-hidden text-ellipsis text-[#8D8974] text-[0.875rem] font-normal leading-[1.3125rem] tracking-[-0.02188rem]">
-                    {room.lastMessage}
-                  </p>
+                <div className="ml-[1rem] mr-[0.5rem]">
+                  <div className="flex flex-row items-center gap-1">
+                    {/* 상대방 이름 적용 */}
+                    <span className="overflow-hidden text-ellipsis text-[#26220D] font-suit text-[1rem] font-semibold leading-[1.5rem] tracking-[-0.025rem]">
+                      {room.tradeUserName === user?.name
+                        ? room.opponentName
+                        : room.tradeUserName}
+                    </span>
+                    <span> ・ </span>
+                    {/* 마지막 메시지 시간 적용 */}
+                    <span className="text-[#545245] text-xs font-normal leading-[1.125rem] tracking-[-0.01875rem] font-suit">
+                      {formatChatTime(room.updatedAt)}
+                    </span>
+                  </div>
+                  <div>
+                    {/* 마지막 메시지 적용 */}
+                    <p className="max-w-[10.625rem] truncate overflow-hidden text-ellipsis text-[#8D8974] text-[0.875rem] font-normal leading-[1.3125rem] tracking-[-0.02188rem]">
+                      {room.lastMessage}
+                    </p>
+                  </div>
                 </div>
               </div>
+              <div>
+                {/* 채팅방 삭제 아이콘 */}
+                <Image
+                  onClick={(e) => {
+                    e.stopPropagation(); // ✅ 부모 클릭 이벤트 방지 (채팅방 클릭 방지)
+                    deleteChatRoom(room.tradePostId, room.chatRoomId); // ✅ 올바른 함수 호출 방식
+                  }}
+                  className="min-w-[1.875rem]"
+                  src="/icons/cancel_icon_24px.svg"
+                  alt="Cancel Icon"
+                  width={30}
+                  height={30}
+                />
+              </div>
             </div>
-            <div>
-              {/* 채팅방 삭제 아이콘 */}
-              <Image
-                onClick={(e) => {
-                  e.stopPropagation(); // ✅ 부모 클릭 이벤트 방지 (채팅방 클릭 방지)
-                  deleteChatRoom(room.tradePostId, room.chatRoomId); // ✅ 올바른 함수 호출 방식
-                }}
-                className="min-w-[1.875rem]"
-                src="/icons/cancel_icon_24px.svg"
-                alt="Cancel Icon"
-                width={30}
-                height={30}
-              />
-            </div>
-          </div>
-        ))
+          ))
       )}
     </div>
   );
