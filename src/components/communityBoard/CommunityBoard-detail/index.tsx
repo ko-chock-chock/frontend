@@ -204,7 +204,15 @@ const CommunityBoardDetail = ({
                 </span>
               </div>
             </div>
-            <p className="text-text-tertiary text-sm">{post.createdAt}</p>
+            <p className="text-text-tertiary text-sm">
+              {new Date(post.createdAt)
+                .toLocaleDateString("ko-KR", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                })
+                .replace(/-/g, ".")}
+            </p>
           </div>
         </div>
         <h1 className="text-base font-bold text-text-primary mt-6 px-3">
