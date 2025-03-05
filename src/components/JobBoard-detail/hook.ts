@@ -133,25 +133,26 @@ const useJobBoardDetail = () => {
 
       console.log("📩 서버 응답 상태 코드:", response.status);
 
-      if (!response.ok) {
-        console.error("❌ 채팅방 생성 실패:", response.status);
-        alert("채팅방을 생성할 수 없습니다.");
-        return;
-      }
-
       // ✅ 응답이 JSON인지 확인
       const contentType = response.headers.get("content-type");
-      let data;
+      let chatRoomId: number | null = null;
+
       if (contentType && contentType.includes("application/json")) {
-        data = await response.json(); // JSON 형식이면 파싱
+        const data = await response.json(); // JSON 형식이면 파싱
+        chatRoomId = data.chatRoomId || data; // ✅ 채팅방 ID 추출 (data에 key가 있다면 사용)
       } else {
-        data = await response.text(); // 텍스트 응답 처리
+        chatRoomId = Number(await response.text()); // ✅ 응답이 숫자 형식이라면 변환
       }
 
-      console.log("📩 서버 응답 데이터:", data);
+      console.log("📩 생성된 채팅방 ID:", chatRoomId);
 
-      // router.push(`/jobList/${postId}/${chatRoomId}`); 백엔드가 채팅 룸의 ID를 반환해준다면 가능해짐.
-      router.push(`/chatList/`);
+      router.push(`/jobList/${postId}/${chatRoomId}`);
+      if (!response.ok) {
+        console.error("❌ 채팅방 생성 실패:", response.status);
+        alert("이미 만들어진 채팅방 입니다.");
+        router.push(`/chatList/`);
+        return;
+      }
     } catch (error) {
       console.error("🚨 API 오류:", error);
       alert("채팅방 생성 중 오류가 발생했습니다.");

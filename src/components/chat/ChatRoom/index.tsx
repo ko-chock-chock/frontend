@@ -65,7 +65,23 @@ export default function ChatRoom() {
   };
 
   useEffect(() => {
-    const socket = new SockJS("http://3.36.40.240:8001/ws");
+    // ✅ 현재 환경에 맞는 WebSocket 프로토콜 설정
+    const httpProtocol =
+      window.location.protocol === "https:" ? "https" : "http";
+    const socketUrl = `${httpProtocol}://3.36.40.240:8001/ws`;
+
+    console.log("🌐 WebSocket 연결 URL:", socketUrl);
+
+    // ✅ HTTPS 환경에서 HTTP WebSocket 차단 문제 해결
+    if (
+      window.location.protocol === "https:" &&
+      !socketUrl.startsWith("https")
+    ) {
+      console.error("❌ HTTPS 환경에서는 HTTP WebSocket을 사용할 수 없습니다.");
+      return;
+    }
+
+    const socket = new SockJS(socketUrl);
     const stompClient = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000, // 5초마다 자동 재연결
