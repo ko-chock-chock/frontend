@@ -5,6 +5,7 @@ import Image from "next/image";
 import Button from "@/commons/Button";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { CommunityPost } from "./type";
 
 // ✅ 토큰 가져오기 함수
 const getAccessToken = (): string | null => {
@@ -15,7 +16,7 @@ const getAccessToken = (): string | null => {
 };
 
 // ✅ 커뮤니티 리스트 API 호출 함수
-const fetchCommunityPosts = async () => {
+const fetchCommunityPosts = async (): Promise<CommunityPost[]> => {
   try {
     const token = getAccessToken();
     if (!token) throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
@@ -31,8 +32,8 @@ const fetchCommunityPosts = async () => {
       throw new Error(`서버 오류: ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log("🔎 서버 응답 데이터:", data); // 구조 확인
+    const data: CommunityPost[] = await response.json(); // 🔹 타입 적용
+    console.log("🔎 서버 응답 데이터:", data);
     return data;
   } catch (error) {
     console.error("❌ 게시글 목록 불러오기 실패:", error);
@@ -42,7 +43,7 @@ const fetchCommunityPosts = async () => {
 
 export default function CommunityBoard() {
   const router = useRouter();
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<CommunityPost[]>([]); // 🔹 명확한 타입 적용
   const [loading, setLoading] = useState(true);
 
   // ✅ 첫 로딩 시 데이터 가져오기

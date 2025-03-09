@@ -7,10 +7,11 @@ import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import Image from "next/image";
 import Button from "@/commons/Button";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Input from "@/commons/input";
 import { useUserStore } from "@/commons/store/userStore";
-import axiosInstance from "@/utils/axiosInstance";
+import { fetchData } from "@/utils/fetchAPI"; // ✅ fetchData 함수 임포트
+import { useParams } from "next/navigation";
 
 interface Message {
   createdAt?: string;
@@ -19,36 +20,68 @@ interface Message {
   chatRoomId: any;
   type: string; // 메시지 타입 ('text' 또는 'system')
   text?: string; // 일반 메시지 내용
-  time?: string; // 시간 지울예정
-  sender?: string; // 발신자 지울예정
-  senderId?: number; // 발신자ID 지울예정
   writeUserProfileImage?: string;
   writeUserId?: number | undefined;
 }
 
 export default function ChatRoom() {
+  const { boardId, chatId } = useParams();
   const [messages, setMessages] = useState<Message[]>([]); // 채팅 메시지 상태
   const [inputValue, setInputValue] = useState(""); // 입력 필드 상태
   const [detail, setDetail] = useState(false); // 상세 버튼 (숨김 상태)
   const inputRef = useRef<HTMLInputElement>(null); // 입력 필드 DOM에 접근하기 위한 ref
   const messagesEndRef = useRef<HTMLDivElement>(null); // 채팅 메시지 목록의 끝을 참조하는 ref
   const router = useRouter(); // useRouter 훅 사용
-  const searchParams = useSearchParams();
-  const roomId = searchParams.get("roomId"); // ✅ URL에서 roomId 가져오기
-  const postId = searchParams.get("postId"); // 해당 게시물의 ID
-  const title = searchParams.get("title");
-  const price = searchParams.get("price");
-  const imageUrl = searchParams.get("imageUrl"); // 해당 게시물의 썸네일
-  const tradeUserId = searchParams.get("tradeUserId") || ""; // 게시글 올린 유저의 ID
-  const tradeUserImage = searchParams.get("tradeUserImage") || ""; // 게시글 올린 유저의 프사
-  const user = useUserStore((state) => state.user) ?? { name: "", id: 0 }; // 로그인한 유저정보 가져옴
+  const roomId = chatId; // ✅ URL에서 roomId 가져오기
+  const postId = boardId; // 해당 게시물의 ID
+  const user = useUserStore((state) => state.user) ?? {
+    name: "",
+    id: 0,
+    profileImage: "",
+  }; // 로그인한 유저정보 가져옴
   const stompClientRef = useRef<Client | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const isFetched = useRef(false);
+
+  // ✅ 게시물 데이터 상태
+  const [postData, setPostData] = useState({
+    thumbnailImage: "",
+    title: "",
+    price: 0,
+    state: "",
+    postWriteUserId: "",
+    postWriteUserName: "", // 게시물쓴 사람
+    postWriteUserProfileImage: "",
+  });
+
+  console.log(user.profileImage);
+
+  // ✅ 토큰 가져오기 함수
+  const getAccessToken = (): string | null => {
+    const tokenStorageStr = localStorage.getItem("token-storage");
+    if (!tokenStorageStr) return null;
+    const tokenData = JSON.parse(tokenStorageStr);
+    return tokenData?.accessToken || null;
+  };
 
   useEffect(() => {
-    console.log("📡 WebSocket 연결 시도 중...");
-    console.log("🔍 구독하는 roomId 타입:", typeof roomId, roomId);
+    // ✅ 현재 환경에 맞는 WebSocket 프로토콜 설정
+    const httpProtocol =
+      window.location.protocol === "https:" ? "https" : "http";
+    const socketUrl = `${httpProtocol}://3.36.40.240:8001/ws`;
 
-    const socket = new SockJS("http://3.36.40.240:8001/ws");
+    console.log("🌐 WebSocket 연결 URL:", socketUrl);
+
+    // ✅ HTTPS 환경에서 HTTP WebSocket 차단 문제 해결
+    if (
+      window.location.protocol === "https:" &&
+      !socketUrl.startsWith("https")
+    ) {
+      console.error("❌ HTTPS 환경에서는 HTTP WebSocket을 사용할 수 없습니다.");
+      return;
+    }
+
+    const socket = new SockJS(socketUrl);
     const stompClient = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000, // 5초마다 자동 재연결
@@ -93,30 +126,79 @@ export default function ChatRoom() {
     };
   }, [roomId]);
 
-  // API를 요청해서 해당방의 이전 메세지 기록을 불러옴
+  // ✅ 이전 채팅 메시지 불러오기
   useEffect(() => {
-    axiosInstance
-      .get(`/api/trade/${postId}/chat-rooms/${roomId}/messages`)
-      .then((response) => {
-        setMessages(response.data.reverse()); // ✅ 최신 메시지가 아래로 정렬되도록 수정
-      })
-      .catch((error) =>
-        console.error("채팅 내역 불러오기 실패:", error.message)
+    const fetchChatMessages = async () => {
+      // ✅ fetchData 호출 시 제네릭으로 `ChatMessage[]` 지정
+      const response = await fetchData<Message[]>(
+        `/api/trade/${postId}/chat-rooms/${roomId}/messages`
       );
+
+      if (response.success && response.data) {
+        setMessages(response.data.reverse()); // ✅ 최신 메시지가 아래로 정렬되도록 수정
+      } else {
+        console.error("❌ 채팅 내역 불러오기 실패:", response.message);
+      }
+    };
+
+    fetchChatMessages();
   }, [roomId]);
 
-  // ✅ 메시지 전송하는 경우
+  // ✅ 게시물 데이터 불러오기 (제목, 가격, 이미지, 작성자 정보)
+  useEffect(() => {
+    if (!postId || isFetched.current) return; // ✅ 이미 실행됐다면 중복 실행 방지
+    isFetched.current = true; // ✅ 한 번 실행되면 다시 실행되지 않도록 설정
+
+    const fetchPostState = async () => {
+      try {
+        const token = getAccessToken();
+        if (!token) {
+          console.error("❌ 인증 토큰이 없습니다.");
+          return;
+        }
+
+        const response = await fetch(`/api/trade/${postId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("게시물 정보를 불러오는 데 실패했습니다.");
+        }
+
+        const data = await response.json();
+        console.log("📌 API에서 받은 게시물 정보:", data);
+
+        setPostData({
+          thumbnailImage: data.thumbnailImage || "",
+          title: data.title || "제목 없음",
+          price: data.price ?? 0,
+          state: data.state || "",
+          postWriteUserId: data.writeUserId || "",
+          postWriteUserName: data.postWriteUserName || "",
+          postWriteUserProfileImage: data.writeUserProfileImage || "",
+        });
+      } catch (error) {
+        console.error("🚨 게시물 데이터 가져오기 실패:", error);
+      }
+    };
+
+    fetchPostState();
+  }, [postId]); // ✅ postId 변경 시 한 번만 실행
+
+  // ✅ 텍스트 메시지 전송하는 경우
   const sendMessage = () => {
     if (!inputValue.trim()) return; // 빈 메세지 방지
 
     const chatMessage: Message = {
       chatRoomId: Number(roomId), // ✅ 문자열이 아니라 숫자로 변환
-
       type: "TEXT", // 메세지 타입
       message: inputValue, // 메세지 내용
-
       writeUserName: user?.name ?? "", // 현재 로그인 사용자 이름
-      writeUserProfileImage: "",
+      writeUserProfileImage: user?.profileImage ?? "",
       writeUserId: user?.id,
       createdAt: "",
     };
@@ -124,7 +206,7 @@ export default function ChatRoom() {
 
     if (stompClientRef.current && stompClientRef.current.connected) {
       stompClientRef.current.publish({
-        destination: "/app/chat/send", // 🔥 이 부분이 서버에서 받는 경로야
+        destination: "/app/chat/send", // 🔥 이 부분이 서버에서 받는 경로
         body: JSON.stringify(chatMessage),
       });
       console.log("✅ 메시지 전송 성공!");
@@ -135,17 +217,14 @@ export default function ChatRoom() {
     inputRef.current?.focus();
   };
 
-  // 산책 승인 메시지 전송하는 경우  - 메세지만 어떻게 나오게 시도하기 그럼 이거도 끝남
+  // 산책 승인 메시지 전송하는 경우
   const onClickApprove = () => {
     const walkMessage: Message = {
       chatRoomId: Number(roomId),
       type: "LOCATION",
       message: "산책을 시작하려 해요!\n우리 반려동물의 위치를 확인해 보세요!",
 
-      createdAt: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      createdAt: new Date().toISOString(), // ISO 형식
       writeUserId: user?.id,
     };
 
@@ -160,10 +239,104 @@ export default function ChatRoom() {
     }
   };
 
-  // 이미지 함수 들어가는 부분
-  // const onClickImage = () => {
-  //   const imageMessage: Message = {};
-  // };
+  // 이미지 전송하는 경우
+  const uploadImage = async (file: File): Promise<string[]> => {
+    try {
+      console.log("📤 이미지 업로드 시작...");
+
+      const token = getAccessToken();
+      if (!token) throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
+
+      const formData = new FormData();
+      formData.append("files", file); // ✅ `files` 키로 파일 추가 (API 문서 참고)
+
+      console.log("📸 전송할 이미지 파일:", formData.getAll("files"));
+
+      const response = await fetch("/api/uploads/multiple", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`, // ✅ 인증 헤더 추가
+        },
+        body: formData, // ✅ FormData 사용
+      });
+
+      console.log("✅ 이미지 업로드 완료! 응답 상태 코드:", response.status);
+
+      if (!response.ok) throw new Error("파일 업로드 실패");
+
+      const data = await response.json();
+      console.log("📩 서버 응답 JSON:", data);
+
+      // 🔍 서버 응답이 예상과 같은지 확인
+      if (!data || !Array.isArray(data)) {
+        console.error("❌ 서버 응답 데이터가 예상과 다름:", data);
+        throw new Error("서버에서 올바른 이미지 URL을 반환하지 않았습니다.");
+      }
+
+      console.log("✅ 최종 반환 이미지 URL 목록:", data);
+      return data; // ✅ URL 배열 반환
+    } catch (error) {
+      console.error("❌ 이미지 업로드 실패:", error);
+
+      if (error instanceof Error) {
+        alert("이미지 업로드에 실패했습니다. 오류 메시지: " + error.message);
+      } else {
+        alert("이미지 업로드에 실패했습니다. 알 수 없는 오류가 발생했습니다.");
+      }
+
+      return [];
+    }
+  };
+
+  // ✅ 파일 업로드 시 이미지 추가
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const files = Array.from(e.target.files); // ✅ 여러 개의 파일을 배열로 변환
+    console.log("📸 선택된 파일들:", files);
+
+    try {
+      // 1️⃣ 모든 파일을 개별적으로 업로드하고 WebSocket으로 전송
+      for (const file of files) {
+        const uploadedImageUrls = await uploadImage(file); // ✅ 개별 파일 업로드
+        if (uploadedImageUrls.length === 0)
+          throw new Error("이미지 URL이 없습니다.");
+
+        const imageUrl = uploadedImageUrls[0]; // ✅ 첫 번째 이미지 URL 사용
+        console.log("📩 업로드된 이미지 URL:", imageUrl);
+
+        // 2️⃣ 개별 이미지 메시지 생성 후 WebSocket으로 전송
+        const imageMessage: Message = {
+          chatRoomId: Number(roomId),
+          type: "IMAGE",
+          message: imageUrl, // ✅ 개별 이미지 URL 추가
+          createdAt: new Date().toISOString(),
+          writeUserId: user?.id,
+          writeUserProfileImage: user?.profileImage ?? "",
+        };
+
+        console.log("📤 WebSocket으로 전송할 메시지:", imageMessage);
+
+        if (stompClientRef.current && stompClientRef.current.connected) {
+          stompClientRef.current.publish({
+            destination: "/app/chat/send",
+            body: JSON.stringify(imageMessage),
+          });
+          console.log("✅ 이미지 메시지 전송 성공!");
+        } else {
+          console.error("🚨 WebSocket 연결 안됨! 메시지 전송 실패");
+        }
+      }
+    } catch (error) {
+      console.error("🚨 이미지 업로드 실패:", error);
+    }
+  };
+
+  const onClickImage = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click(); // ✅ 파일 선택 창 열기
+    }
+  };
 
   // ✅ 채팅방 하단 자동 스크롤
   useEffect(() => {
@@ -177,17 +350,8 @@ export default function ChatRoom() {
 
   // 지도 페이지로 이동
   const onClickMap = () => {
-    router.push("/map");
+    router.push(`/jobList/${postId}/${roomId}/map`);
   };
-
-  console.log("📌 현재 방 정보:", {
-    roomId,
-    title,
-    price,
-    imageUrl,
-    tradeUserId,
-    postId,
-  });
 
   return (
     <main className="flex flex-col h-[94dvh] max-h-[94dvh] overflow-hidden text-[#26220D] font-suit text-base">
@@ -196,20 +360,23 @@ export default function ChatRoom() {
           <div
             className="w-12 h-12 mr-2 rounded-2xl bg-center bg-cover bg-no-repeat flex-shrink-0"
             style={{
-              backgroundImage: imageUrl ? `url(${imageUrl})` : "none",
-              backgroundColor: imageUrl ? "transparent" : "#d3d3d3",
+              backgroundImage: postData.thumbnailImage
+                ? `url(${postData.thumbnailImage})`
+                : "none",
+              backgroundColor: postData.thumbnailImage
+                ? "transparent"
+                : "#d3d3d3",
             }}
           ></div>
           <div className="w-full">
             <div className="flex justify-between">
-              <span className="max-w-[250px] truncate">{title}</span>
-              <span className="font-extrabold">게시중</span>{" "}
-              {/* 나중에 게시 완료 이런식으로 바뀌는 로직 추가해야함. */}
+              <span className="max-w-[250px] truncate">{postData.title}</span>
+              <span className="font-extrabold">
+                {postData.state === "TRADING" ? "게시중" : "게시완료"}
+              </span>
             </div>
             <div>
-              <span className="font-extrabold">
-                {price === "가격 미정" ? 0 : price} 원
-              </span>
+              <span className="font-extrabold">{postData.price}원</span>
             </div>
           </div>
         </div>
@@ -222,7 +389,7 @@ export default function ChatRoom() {
             <div
               key={index}
               className={`w-full flex ${
-                (message.sender || message.writeUserName) === user.name
+                message.writeUserName === user.name
                   ? "justify-end"
                   : "justify-start"
               }`}
@@ -261,62 +428,105 @@ export default function ChatRoom() {
                 </div>
               )}
 
-              {/* 여기에 IMAGE 타입 들어갈 예정 */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+              />
 
-              {/* 📌 TEXT 타입 메시지 */}
               {/* 📌 TEXT 타입 메시지 */}
               {message.type === "TEXT" && (
                 <>
                   {/* 내가 보낸 메시지라면 시간 왼쪽 */}
-                  {(message.sender || message.writeUserName) === user.name &&
-                    message.createdAt && (
-                      <span className="flex items-end min-w-[3.8125rem] mr-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
-                        {new Date(message.createdAt).toLocaleTimeString(
-                          "ko-KR",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
-                      </span>
-                    )}
+                  {message.writeUserName === user.name && message.createdAt && (
+                    <span className="flex items-end min-w-[3.8125rem] mr-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
+                      {new Date(message.createdAt).toLocaleTimeString("ko-KR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  )}
 
                   {/* 상대 아이콘 */}
-                  {(message.sender || message.writeUserName) !== user.name && (
+                  {message.writeUserName !== user.name && (
                     <div
-                      className="w-[40px] h-[40px] mr-2 rounded-3xl bg-center bg-cover bg-no-repeat flex-shrink-0"
+                      className="w-[48px] h-[48px] mr-2 rounded-3xl bg-center bg-cover bg-no-repeat flex-shrink-0"
                       style={{
+                        backgroundImage: `url(${message.writeUserProfileImage})`,
                         backgroundColor: "#d3d3d3",
                       }}
                     ></div>
                   )}
 
                   <div
-                    className={`max-w-[79%] px-3 py-2 ${
-                      (message.sender || message.writeUserName) === user.name
+                    className={`max-w-[79%] mt-3 px-3 py-2 ${
+                      message.writeUserName === user.name
                         ? "bg-[#E9E8E3] rounded-tl-lg rounded-tr-lg rounded-bl-lg rounded-br-none"
                         : "bg-[#BFE5B3] rounded-tl-none rounded-tr-lg rounded-bl-lg rounded-br-lg"
                     } text-[#26220D] text-base font-medium leading-6 tracking-[-0.025rem]`}
                   >
-                    {message.text || message.message}
+                    {message.message}
                   </div>
 
                   {/* 상대가 보낸 메세지라면 시간 오른쪽 */}
-                  {(message.sender || message.writeUserName) !== user.name &&
-                    message.createdAt && (
-                      <span className="flex items-end min-w-[3.8125rem] ml-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
-                        {new Date(message.createdAt).toLocaleTimeString(
-                          "ko-KR",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
-                      </span>
-                    )}
+                  {message.writeUserName !== user.name && message.createdAt && (
+                    <span className="flex items-end min-w-[3.8125rem] ml-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
+                      {new Date(message.createdAt).toLocaleTimeString("ko-KR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  )}
                 </>
               )}
 
+              {message.type === "IMAGE" && (
+                <>
+                  {/* 내가 보낸 이미지라면 시간 왼쪽 */}
+                  {message.writeUserName === user.name && message.createdAt && (
+                    <span className="flex items-end min-w-[3.8125rem] mr-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
+                      {new Date(message.createdAt).toLocaleTimeString("ko-KR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  )}
+
+                  {/* 상대 아이콘 */}
+                  {message.writeUserName !== user.name && (
+                    <div
+                      className="w-[48px] h-[48px] mr-2 rounded-3xl bg-center bg-cover bg-no-repeat flex-shrink-0"
+                      style={{
+                        backgroundImage: `url(${message.writeUserProfileImage})`,
+                        backgroundColor: "#d3d3d3",
+                      }}
+                    ></div>
+                  )}
+
+                  <div className="max-w-[79%] mt-3 px-3 py-2">
+                    <Image
+                      src={message.message} // 이미지 URL
+                      alt="보낸 이미지"
+                      width={200}
+                      height={200}
+                      className="rounded-lg"
+                    />
+                  </div>
+
+                  {/* 상대가 보낸 이미지라면 시간 오른쪽 */}
+                  {message.writeUserName !== user.name && message.createdAt && (
+                    <span className="flex items-end min-w-[3.8125rem] ml-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
+                      {new Date(message.createdAt).toLocaleTimeString("ko-KR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  )}
+                </>
+              )}
               <div ref={messagesEndRef} />
             </div>
           );
@@ -332,7 +542,7 @@ export default function ChatRoom() {
           <div className="flex w-full gap-3 ">
             {/* 사진 보내기 */}
             <Image
-              // onClick={onClickImage} - 나중에 사용
+              onClick={onClickImage}
               className=""
               src="/images/chat_image_upload_btn_img_44px.svg"
               alt="send Icon"
@@ -341,7 +551,7 @@ export default function ChatRoom() {
             />
 
             {/* 산책 시작하기 */}
-            {Number(tradeUserId) === user.id && (
+            {Number(postData.postWriteUserId) === user.id && (
               <Image
                 onClick={onClickApprove}
                 className=""

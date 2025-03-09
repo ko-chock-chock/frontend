@@ -17,7 +17,8 @@ export default function BookmarkComponent() {
   const [currentTab, setCurrentTab] = useState<TabType>("찜");
 
   // 게시글 데이터 및 상태 가져오기
-  const { posts, postCounts, loading, error,  toggleLike,  toggleBookmark   } = useMyPosts(currentTab);
+  const { posts, postCounts, loading, error, toggleLike, toggleBookmark } =
+    useMyPosts(currentTab);
 
   /**
    * 탭 변경 핸들러
@@ -76,7 +77,13 @@ export default function BookmarkComponent() {
         )}
 
         {posts.map((post: Post) => (
-          <PostCard key={post.id} post={post} onPostClick={handlePostClick} onToggleLike={toggleLike} onToggleBookmark={toggleBookmark}/>
+          <PostCard
+            key={post.id}
+            post={post}
+            onPostClick={handlePostClick}
+            onToggleLike={toggleLike}
+            onToggleBookmark={toggleBookmark}
+          />
         ))}
       </div>
     </main>
