@@ -8,6 +8,7 @@ const useJobBoardDetail = () => {
   const [boardData, setBoardData] = useState<BoardData | null>(null);
   const [checkLike, setCheckLike] = useState(null);
   const [isLiked, setIsLiked] = useState<boolean>(false);
+  const [isOwnPost, setIsOwnPost] = useState<boolean>(false);
   const router = useRouter();
 
   // 엑세스 토큰 가져옴
@@ -34,7 +35,6 @@ const useJobBoardDetail = () => {
   useEffect(() => {
     const fetchPostData = async () => {
       const token = getAccessToken();
-      const loggedInUserId = getUserId(); // ✅ 로그인한 사용자 ID 가져오기
       if (!token) throw new Error("로그인이 필요합니다.");
       if (!boardId) return;
       try {
@@ -48,6 +48,7 @@ const useJobBoardDetail = () => {
         });
         const result = await response.json();
         setBoardData(result);
+        console.log(result);
 
         // 내가 좋아요한 게시글인지 확인
         const checkLikeResponse = await fetch(`/api/users/trade-posts/liked`, {
@@ -72,6 +73,13 @@ const useJobBoardDetail = () => {
     };
     fetchPostData();
   }, [boardId]);
+
+  useEffect(() => {
+    const loggedInUserId = getUserId();
+    if (boardData) {
+      setIsOwnPost(boardData.writeUserId === loggedInUserId);
+    }
+  }, [boardData]);
 
   const likeButtonClickHandler = async () => {
     const token = getAccessToken();
@@ -161,6 +169,7 @@ const useJobBoardDetail = () => {
     boardData,
     isLiked,
     handleChat,
+    isOwnPost,
   };
 };
 
