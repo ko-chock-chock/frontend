@@ -9,7 +9,7 @@ import "swiper/css/pagination";
 import useJobBoardDetail from "./hook";
 
 const JobBoardDetail = () => {
-  const { likeButtonClickHandler, boardData, isLiked, handleChat } =
+  const { likeButtonClickHandler, boardData, isLiked, handleChat, isOwnPost } =
     useJobBoardDetail();
 
   return (
@@ -145,8 +145,11 @@ const JobBoardDetail = () => {
           />
         </button>
         <button
-          className="flex px-5 py-4 justify-center items-center gap-1 flex-1 rounded-xl bg-primary text-base font-bold text-white"
+          className={`flex px-5 py-4 justify-center items-center gap-1 flex-1 rounded-xl text-base font-bold text-white ${
+            isOwnPost ? "bg-slate-300" : "bg-primary"
+          }`}
           onClick={handleChat}
+          disabled={isOwnPost}
         >
           채팅하기
         </button>

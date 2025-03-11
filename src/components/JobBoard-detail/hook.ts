@@ -2,14 +2,14 @@
 import { useEffect, useState } from "react";
 import { BoardData, CheckLike } from "./types";
 import { useParams, useRouter } from "next/navigation";
-// useRouter 추가함.
 
 const useJobBoardDetail = () => {
   const { boardId } = useParams<{ boardId: string }>();
   const [boardData, setBoardData] = useState<BoardData | null>(null);
   const [checkLike, setCheckLike] = useState(null);
   const [isLiked, setIsLiked] = useState<boolean>(false);
-  const router = useRouter(); // ✅ 수정됨
+  const [isOwnPost, setIsOwnPost] = useState<boolean>(false);
+  const router = useRouter();
 
   // 엑세스 토큰 가져옴
   const getAccessToken = (): string | null => {
@@ -19,11 +19,10 @@ const useJobBoardDetail = () => {
     return tokenData?.accessToken || null;
   };
 
-  // ✅ 현재 로그인한 사용자 ID 가져오기 (추가)
+  // 현재 로그인한 사용자 ID 가져오기 (추가)
   const getUserId = (): number | null => {
     const userStorageStr = localStorage.getItem("user-storage");
-    if (!userStorageStr) return null; // ❌ 데이터가 없을 경우 null 반환
-
+    if (!userStorageStr) return null;
     try {
       const userStorageData = JSON.parse(userStorageStr);
       return userStorageData?.state?.user?.id || null; // ✅ user ID 가져오기
@@ -36,7 +35,6 @@ const useJobBoardDetail = () => {
   useEffect(() => {
     const fetchPostData = async () => {
       const token = getAccessToken();
-      const loggedInUserId = getUserId(); // ✅ 로그인한 사용자 ID 가져오기
       if (!token) throw new Error("로그인이 필요합니다.");
       if (!boardId) return;
       try {
@@ -50,6 +48,7 @@ const useJobBoardDetail = () => {
         });
         const result = await response.json();
         setBoardData(result);
+        console.log(result);
 
         // 내가 좋아요한 게시글인지 확인
         const checkLikeResponse = await fetch(`/api/users/trade-posts/liked`, {
@@ -67,16 +66,20 @@ const useJobBoardDetail = () => {
           (item: CheckLike) => item.id === parseInt(boardId, 10)
         );
         setIsLiked(isAlreadyLiked);
-        console.log("📌 현재 로그인한 사용자 ID:", loggedInUserId);
-        console.log("📌 게시글 작성자 ID:", result.writeUserId); // ✅ 작성자 정보 로그 확인
-        console.log("PostId:", boardId);
       } catch (error) {
-        console.error("❌ 게시글 불러오기 실패:", error);
+        console.error(error);
         alert("게시글 불러오기에 실패했습니다.");
       }
     };
     fetchPostData();
   }, [boardId]);
+
+  useEffect(() => {
+    const loggedInUserId = getUserId();
+    if (boardData) {
+      setIsOwnPost(boardData.writeUserId === loggedInUserId);
+    }
+  }, [boardData]);
 
   const likeButtonClickHandler = async () => {
     const token = getAccessToken();
@@ -166,6 +169,7 @@ const useJobBoardDetail = () => {
     boardData,
     isLiked,
     handleChat,
+    isOwnPost,
   };
 };
 

@@ -4,46 +4,70 @@ import Button from "@/commons/Button";
 // import KakaoMapComponent from "@/commons/kakaoMap-socket";
 import KakaoMapComponent from "@/commons/kakakoMap";
 import { useUserStore } from "@/commons/store/userStore";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import React, { useState, useEffect, useRef } from "react";
 
+type ChatUserDataType = {
+  writeUserId: number;
+  requestUserId: number;
+};
 const WalkMap = () => {
-  const [time, setTime] = useState<number>(0); // 타이머 초기값: 0초 (UI용)
   const [isWalking, setIsWalking] = useState<boolean>(false); // 산책 상태 관리
   const [hasEnded, setHasEnded] = useState<boolean>(false); // 산책 종료 여부 (종료 후 재시작 불가)
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const { boardId } = useParams() as { boardId: string };
-  const [boardData, setBoardData] = useState<{ writeUserId: number } | null>(
+  const { boardId, chatId } = useParams() as {
+    boardId: string;
+    chatId: string;
+  };
+  const [chatUserData, setChatUserData] = useState<ChatUserDataType | null>(
     null
   );
+  const router = useRouter();
 
-  // 게시물 데이터 조회
+  // 엑세스 토큰 가져옴
+  const getAccessToken = (): string | null => {
+    const tokenStorageStr = localStorage.getItem("token-storage");
+    if (!tokenStorageStr) return null;
+    const tokenData = JSON.parse(tokenStorageStr);
+    return tokenData?.accessToken || null;
+  };
+
+  // 로그인 유저정보
+  const loggedInUserId = useUserStore((state) => state.user?.id);
+
   useEffect(() => {
-    if (!boardId) return;
-    const token = localStorage.getItem("token-storage")
-      ? JSON.parse(localStorage.getItem("token-storage")!)
-      : null;
-    const fetchBoardData = async () => {
+    const checkParticipant = async () => {
+      const token = getAccessToken();
+      if (!token || !boardId || !chatId || !loggedInUserId) return;
       try {
-        const response = await fetch(`/api/trade/${boardId}`, {
+        const res = await fetch(`/api/trade/${boardId}/chat-rooms/${chatId}`, {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${token?.accessToken}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
-        if (!response.ok)
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        const data = await response.json();
-        setBoardData(data);
+        if (!res.ok) return;
+        const result = await res.json();
+        console.log("ChatUserData result", result);
+        // 참여자가 아닌 경우 바로 리다이렉트
+        if (
+          loggedInUserId !== result.writeUserId &&
+          loggedInUserId !== result.requestUserId
+        ) {
+          alert("접근 권한이 없습니다.");
+          router.push("/");
+        } else {
+          setChatUserData(result);
+        }
       } catch (error) {
-        console.error("[DEBUG] Error fetching board data:", error);
+        console.error("Error checking chat room participants:", error);
       }
     };
-    fetchBoardData();
-  }, [boardId]);
+    checkParticipant();
+  }, [boardId, chatId, loggedInUserId, router]);
 
-  // 타이머 시작 및 정지 핸들러
+  // 산책 시작 정지 핸들러
   const toggleWalking = () => {
     // 산책 종료 후에는 재시작 불가
     if (hasEnded) return;
@@ -53,9 +77,6 @@ const WalkMap = () => {
       setIsWalking(false);
       setHasEnded(true);
     } else {
-      timerRef.current = setInterval(() => {
-        setTime((prevTime) => prevTime + 1);
-      }, 1000);
       setIsWalking(true);
     }
   };
@@ -70,7 +91,6 @@ const WalkMap = () => {
     <div className="relative w-full h-screen">
       {/* 지도 컨테이너 */}
       <div className="relative w-full h-[calc(100%-150px)]">
-        {/* isWalking와 hasEnded 상태를 KakaoMapComponent에 전달 */}
         <KakaoMapComponent
           isWalking={isWalking}
           boardId={boardId}
@@ -85,19 +105,19 @@ const WalkMap = () => {
           width="full"
           className="flex justify-center items-center gap-1 p-5 self-stretch h-14 text-base-bold"
           onClick={
-            boardData &&
-            useUserStore.getState().user?.id === boardData.writeUserId
+            chatUserData &&
+            useUserStore.getState().user?.id === chatUserData.writeUserId
               ? undefined
               : toggleWalking
           }
           disabled={
-            (boardData &&
-              useUserStore.getState().user?.id === boardData.writeUserId) ||
+            (chatUserData &&
+              useUserStore.getState().user?.id === chatUserData.writeUserId) ||
             hasEnded
           }
         >
-          {boardData &&
-          useUserStore.getState().user?.id === boardData.writeUserId
+          {chatUserData &&
+          useUserStore.getState().user?.id === chatUserData.writeUserId
             ? "산책 중입니다"
             : hasEnded
             ? "산책 종료됨"
