@@ -99,7 +99,7 @@ export const useJobBoardNew = () => {
       }
 
       alert("게시물이 성공적으로 등록되었습니다.");
-      router.push("/jobList");
+      router.push(`/jobList`);
     } catch (error) {
       console.error("요청 에러:", error);
       alert(error instanceof Error ? error.message : "등록에 실패했습니다.");
