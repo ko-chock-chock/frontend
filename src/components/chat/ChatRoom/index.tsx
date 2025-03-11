@@ -72,13 +72,17 @@ export default function ChatRoom() {
 
     console.log("🌐 WebSocket 연결 URL:", socketUrl);
 
-    // ✅ HTTPS 환경에서 HTTP WebSocket 차단 문제 해결
-    if (
-      window.location.protocol === "https:" &&
-      !socketUrl.startsWith("https")
-    ) {
-      console.error("❌ HTTPS 환경에서는 HTTP WebSocket을 사용할 수 없습니다.");
+    // ✅ HTTPS 환경에서 HTTP WebSocket 차단 방지
+    if (window.location.protocol === "https:" && !socketUrl.startsWith("wss")) {
+      console.error(
+        "❌ HTTPS 환경에서는 WSS(WebSocket Secure) 연결이 필요합니다."
+      );
       return;
+    }
+
+    if (stompClientRef.current) {
+      console.log("🔄 기존 WebSocket 연결 종료 후 재연결");
+      stompClientRef.current.deactivate();
     }
 
     const socket = new SockJS(socketUrl);

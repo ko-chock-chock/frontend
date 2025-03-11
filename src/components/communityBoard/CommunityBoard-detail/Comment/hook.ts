@@ -8,10 +8,6 @@ import { CommentType, Reply } from "./type";
 export function useComment() {
   const params = useParams<{ boardId: string }>();
   const postId = Number(params?.boardId); // postId를 숫자로 변환
-  const [bookmarkToggle, setBookmarkToggle] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [bookmarkCount, setBookmarkCount] = useState(0); // ✅ 북마크 개수 상태 추가
-  const [inputValue, setInputValue] = useState(""); // 입력 필드 상태
   const [comments, setComments] = useState<CommentType[]>([]); // ✅ useState로 상태 관리
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = useState("");
@@ -27,114 +23,32 @@ export function useComment() {
   >({});
   const [editedText, setEditedText] = useState<Record<number, string>>({});
 
+  // ✅ 대댓글 수정 상태 추가
+  const [editingReplies, setEditingReplies] = useState<Record<number, boolean>>(
+    {}
+  );
+  const [editedReplyText, setEditedReplyText] = useState<
+    Record<number, string>
+  >({});
+
+  // ✅ 대댓글 수정 버튼 클릭 시 실행
+  const onEditReply = (replyId: number, content: string) => {
+    setEditingReplies((prev) => ({ ...prev, [replyId]: true }));
+    setEditedReplyText((prev) => ({ ...prev, [replyId]: content }));
+  };
+
+  // ✅ 대댓글 수정 취소 버튼 클릭 시 실행
+  const onCancelEditReply = (replyId: number) => {
+    setEditingReplies((prev) => ({ ...prev, [replyId]: false }));
+    setEditedReplyText((prev) => ({ ...prev, [replyId]: "" }));
+  };
+
   const user = useUserStore((state) => state.user);
   console.log(user);
 
   const token = localStorage.getItem("token-storage")
     ? JSON.parse(localStorage.getItem("token-storage")!).accessToken
     : null;
-
-  // ✅ 1️⃣ 초기 북마크 상태 불러오기
-  useEffect(() => {
-    const fetchBookmarkStatus = async () => {
-      try {
-        if (!token || !postId) return;
-
-        const response = await fetch(`/api/community/${postId}`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) throw new Error("북마크 상태 가져오기 실패");
-
-        const data = await response.json();
-        console.log("✅ 북마크 상태 불러오기 성공:", data);
-
-        setBookmarkToggle(data.isBookmarked); // ✅ 초기 북마크 상태 설정
-        setBookmarkCount(data.bookmarkCount); // ✅ 북마크 개수 설정
-      } catch (error) {
-        console.error("❌ 북마크 상태 가져오기 실패:", error);
-      }
-    };
-
-    fetchBookmarkStatus();
-  }, [bookmarkToggle]); // ✅ postId가 변경될 때만 실행
-
-  const toggleBookmark = async (postId: number) => {
-    if (!postId) return; // ✅ postId가 없으면 실행하지 않음
-    try {
-      if (!token || !postId) return;
-
-      const response = await fetch(`/api/community/${postId}/bookmark`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error(`북마크 토글 실패: ${response.status}`);
-
-      console.log("✅ 북마크 토글 성공");
-      setBookmarkToggle((prev) => !prev);
-      setBookmarkCount((prev) => (bookmarkToggle ? prev - 1 : prev + 1)); // ✅ 즉시 카운트 업데이트
-    } catch (error) {
-      console.error("❌ 북마크 토글 실패:", error);
-      alert("북마크 변경에 실패했습니다.");
-    }
-  };
-
-  const onClickSubmit = async (postId: number, comment: string) => {
-    if (!postId || !comment.trim()) {
-      alert("댓글을 입력해주세요.");
-      return;
-    }
-
-    try {
-      if (!token) {
-        alert("로그인이 필요합니다.");
-        return;
-      }
-
-      console.log("📝 요청 데이터:", { postId, content: comment });
-
-      const response = await fetch(`/api/community/${postId}/comments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content: comment }), // ✅ 댓글 데이터를 JSON으로 변환
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text(); // 서버 응답이 JSON이 아닐 수도 있음
-        console.error("❌ 서버 응답 에러:", errorText);
-        throw new Error("서버에서 댓글 등록을 실패했습니다.");
-      }
-
-      // ✅ 서버 응답이 JSON인지 확인하고 파싱 방식 결정
-      const contentType = response.headers.get("content-type");
-      let result;
-      if (contentType && contentType.includes("application/json")) {
-        result = await response.json(); // ✅ JSON이면 파싱
-      } else {
-        result = await response.text(); // ✅ text/plain이면 그냥 텍스트 처리
-      }
-
-      console.log("✅ 댓글 등록 성공:", result);
-
-      alert("댓글이 등록되었습니다!");
-      setInputValue(""); // ✅ 댓글 입력창 초기화
-      fetchComments();
-    } catch (error) {
-      const err = error as Error;
-      console.error("❌ 댓글 등록 실패:", err.message);
-      alert(`❌ 댓글 등록 실패: ${err.message}`);
-    }
-  };
 
   const fetchComments = async () => {
     try {
@@ -387,14 +301,126 @@ export function useComment() {
     }
   };
 
+  // ✅ 대댓글 수정 저장 (API 연결)
+  const onSaveEditReply = async (
+    postId: number,
+    commentId: number,
+    replyId: number
+  ) => {
+    if (!editedReplyText[replyId].trim()) {
+      alert("수정할 내용을 입력해주세요.");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token-storage")
+        ? JSON.parse(localStorage.getItem("token-storage")!).accessToken
+        : null;
+
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
+
+      const response = await fetch(
+        `/api/community/${postId}/comments/${commentId}/replies/${replyId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ content: editedReplyText[replyId] }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("대댓글 수정 실패");
+      }
+
+      alert("✅ 대댓글이 수정되었습니다!");
+
+      // ✅ UI 업데이트: 수정된 대댓글 반영
+      setComments((prevComments) =>
+        prevComments.map((comment) =>
+          comment.id === commentId
+            ? {
+                ...comment,
+                replies: comment.replies?.map((reply) =>
+                  reply.id === replyId
+                    ? { ...reply, content: editedReplyText[replyId] }
+                    : reply
+                ),
+              }
+            : comment
+        )
+      );
+
+      setEditingReplies((prev) => ({ ...prev, [replyId]: false }));
+    } catch (error) {
+      console.error("❌ 대댓글 수정 실패:", error);
+      alert("대댓글 수정에 실패했습니다.");
+    }
+  };
+
+  // ✅ 대댓글 삭제 (API 연결)
+  const onDeleteReply = async (
+    postId: number,
+    commentId: number,
+    replyId: number
+  ) => {
+    try {
+      const token = localStorage.getItem("token-storage")
+        ? JSON.parse(localStorage.getItem("token-storage")!).accessToken
+        : null;
+
+      if (!token) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
+
+      const confirmDelete = confirm("정말로 삭제하시겠습니까?");
+      if (!confirmDelete) return;
+
+      const response = await fetch(
+        `/api/community/${postId}/comments/${commentId}/replies/${replyId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("대댓글 삭제 실패");
+      }
+
+      alert("✅ 대댓글이 삭제되었습니다!");
+
+      // ✅ UI 업데이트: 삭제된 대댓글 제거
+      setComments((prevComments) =>
+        prevComments.map((comment) =>
+          comment.id === commentId
+            ? {
+                ...comment,
+                replies: comment.replies?.filter(
+                  (reply) => reply.id !== replyId
+                ),
+              }
+            : comment
+        )
+      );
+    } catch (error) {
+      console.error("❌ 대댓글 삭제 실패:", error);
+      alert("대댓글 삭제에 실패했습니다.");
+    }
+  };
+
   return {
     postId,
-    bookmarkToggle,
-    toggleBookmark,
-    inputValue,
-    setInputValue,
     comments,
-    onClickSubmit,
+    fetchComments,
     text,
     textareaRef,
     replyContainerRef,
@@ -410,5 +436,12 @@ export function useComment() {
     setEditedText,
     onSaveEdit,
     onDeleteComment,
+    editingReplies,
+    editedReplyText,
+    onEditReply,
+    onCancelEditReply,
+    onSaveEditReply,
+    onDeleteReply,
+    setEditedReplyText,
   };
 }
