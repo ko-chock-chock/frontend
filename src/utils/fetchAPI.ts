@@ -1,24 +1,9 @@
-// ✅ 액세스 토큰 가져오기
 const getAccessToken = (): string | null => {
   const tokenStorageStr = localStorage.getItem("token-storage");
   if (!tokenStorageStr) return null;
   const tokenData = JSON.parse(tokenStorageStr);
   return tokenData?.accessToken || null;
 };
-
-// ✅ 현재 로그인한 사용자 ID 가져오기 - 안써서 잠시 주석
-// const getUserId = (): number | null => {
-//   const userStorageStr = localStorage.getItem("user-storage");
-//   if (!userStorageStr) return null;
-
-//   try {
-//     const userStorageData = JSON.parse(userStorageStr);
-//     return userStorageData?.state?.user?.id || null;
-//   } catch (error) {
-//     console.error("❌ 유저 ID 파싱 실패:", error);
-//     return null;
-//   }
-// };
 
 // ✅ 공통 Fetch API 함수 (제네릭 활용)
 export const fetchAPI = async <T>(

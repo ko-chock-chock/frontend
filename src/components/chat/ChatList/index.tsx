@@ -1,225 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/commons/store/userStore";
 import Image from "next/image";
-
-interface ChatRoom {
-  chatRoomId: string;
-  lastMessage: string;
-  updatedAt: string;
-  opponentName: string;
-  opponentProfileImage?: string;
-  tradeUserProfileImage?: string;
-  tradePostId: number;
-  tradePostTitle?: string;
-  tradePostPrice?: string;
-  tradePostImage?: string;
-  tradeUserId: string;
-  tradeUserName: string;
-  tradeUserImage: string;
-}
-
-interface TradePost {
-  title: string;
-  price: string;
-  thumbnailImage: string;
-  writeUserId: string;
-  writeUserName: string;
-  writeUserProfileImage: string;
-}
-
-interface ChatRoomApiResponse {
-  writeUserProfileImage: string;
-  id: string;
-  lastMessage?: string;
-  lastMessageDateTime?: string;
-  requestUserName: string;
-  requestUserProfileImage?: string;
-  tradePostId: number;
-}
+import { useChatList } from "./hook";
+import { ChatRoom } from "./type";
 
 export default function ChatList() {
-  const user = useUserStore((state) => state.user);
-  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const { chatRooms, deleteChatRoom, formatChatTime, user } = useChatList();
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchChatRooms = async () => {
-      try {
-        const tokenStorageStr = localStorage.getItem("token-storage");
-        if (!tokenStorageStr) throw new Error("토큰이 없습니다.");
-
-        const tokenData = JSON.parse(tokenStorageStr);
-        const token = tokenData?.accessToken;
-        if (!token) throw new Error("액세스 토큰이 유효하지 않습니다.");
-
-        // 🔥 채팅방 목록 불러오기
-        const response = await fetch(`/api/trade/my-chat-rooms`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) throw new Error("채팅방 목록 불러오기 실패");
-
-        const data: ChatRoomApiResponse[] = await response.json();
-        console.log("📌 채팅방 목록:", data);
-
-        // 🔥 각 채팅방의 게시물 정보 가져오기
-        const chatRoomsWithTradeInfo = await Promise.all(
-          data.map(async (room: ChatRoomApiResponse) => {
-            let tradePostTitle = "제목 없음";
-            let tradePostPrice = "가격 미정";
-            let tradePostImage = "사진 없음";
-            let tradeUserId = "";
-            let tradeUserName = "";
-            let tradeUserImage = "";
-
-            try {
-              const tradeResponse = await fetch(
-                `/api/trade/${room.tradePostId}`,
-                {
-                  method: "GET",
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                  },
-                }
-              );
-
-              if (tradeResponse.ok) {
-                const tradeData: TradePost = await tradeResponse.json();
-                tradePostTitle = tradeData.title || tradePostTitle;
-                tradePostPrice = tradeData.price || tradePostPrice;
-                tradePostImage = tradeData.thumbnailImage || tradePostImage;
-                tradeUserId = tradeData.writeUserId || "";
-                tradeUserName = tradeData.writeUserName || "";
-                tradeUserImage = tradeData.writeUserProfileImage || "";
-
-                console.log("📌 게시물 정보:", tradeData);
-              }
-            } catch (error) {
-              console.error(
-                `❌ 게시물 정보 불러오기 실패 (ID: ${room.tradePostId})`,
-                error
-              );
-            }
-
-            return {
-              chatRoomId: room.id,
-              lastMessage: room.lastMessage || "채팅을 시작해 보세요!",
-              updatedAt: room.lastMessageDateTime || "시작하지 않은 채팅",
-              opponentName: room.requestUserName,
-              opponentProfileImage: room.requestUserProfileImage || "",
-              tradeUserProfileImage: room.writeUserProfileImage || "",
-              tradePostId: room.tradePostId,
-              tradePostTitle,
-              tradePostPrice,
-              tradePostImage,
-              tradeUserId,
-              tradeUserName,
-              tradeUserImage,
-            };
-          })
-        );
-
-        setChatRooms(chatRoomsWithTradeInfo);
-      } catch (error) {
-        console.error("❌ 채팅방 목록 불러오기 오류:", error);
-      }
-    };
-
-    fetchChatRooms();
-  }, []);
-
-  const deleteChatRoom = async (postId: number, chatRoomId: string) => {
-    try {
-      console.log("🗑️ 채팅방 삭제 요청:", { postId, chatRoomId });
-
-      // ✅ 삭제 확인 (선택 사항)
-      const confirmDelete = confirm("정말로 삭제하시겠습니까?");
-      if (!confirmDelete) return;
-
-      // 1️⃣ 저장된 토큰 가져오기
-      const tokenStorageStr = localStorage.getItem("token-storage");
-      if (!tokenStorageStr) throw new Error("토큰이 없습니다.");
-
-      const tokenData = JSON.parse(tokenStorageStr);
-      const token = tokenData?.accessToken;
-      if (!token) throw new Error("액세스 토큰이 유효하지 않습니다.");
-
-      // 2️⃣ DELETE 요청 보내기
-      const response = await fetch(
-        `/api/trade/${postId}/chat-rooms/${chatRoomId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      // 3️⃣ 응답 확인
-      if (!response.ok) throw new Error("채팅방 삭제 실패!");
-
-      console.log("✅ 채팅방 삭제 성공!");
-
-      // 4️⃣ 삭제된 채팅방을 화면에서 제거
-      setChatRooms((prevChatRooms) =>
-        prevChatRooms.filter((room) => room.chatRoomId !== chatRoomId)
-      );
-    } catch (error) {
-      console.error("🚨 채팅방 삭제 오류:", error);
-      alert("채팅방 삭제에 실패했습니다.");
-    }
-  };
-
   const enterChatRoom = (room: ChatRoom) => {
-    const url = `/jobList/${room.tradePostId}/${room.chatRoomId}`;
-
-    router.push(url);
-  };
-
-  {
-    chatRooms.map((room) => {
-      return (
-        <div key={room.chatRoomId}>
-          <p>{room.opponentName}</p>
-        </div> // ✅ 닫는 태그 추가
-      );
-    });
-  }
-
-  // 마지막 채팅시간 관련 함수
-  const formatChatTime = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-
-    const isToday =
-      date.getFullYear() === now.getFullYear() &&
-      date.getMonth() === now.getMonth() &&
-      date.getDate() === now.getDate();
-
-    if (isToday) {
-      return date.toLocaleTimeString("ko-KR", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false, // 24시간 형식
-      });
-    }
-
-    return date
-      .toLocaleDateString("ko-KR", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      })
-      .replace(/-/g, "."); // YYYY.MM.DD 형식
+    router.push(`/jobList/${room.tradePostId}/${room.chatRoomId}`);
   };
 
   return (
@@ -227,8 +18,7 @@ export default function ChatList() {
       {chatRooms.length === 0 ? (
         <p className="text-center text-gray-500 mt-5">💬 채팅방이 없습니다.</p>
       ) : (
-        chatRooms //
-          .slice()
+        chatRooms
           .sort(
             (a, b) =>
               new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -258,20 +48,17 @@ export default function ChatList() {
 
                 <div className="ml-[1rem] mr-[0.5rem]">
                   <div className="flex flex-row items-center gap-1">
-                    {/* 상대방 이름 적용 */}
                     <span className="overflow-hidden text-ellipsis text-[#26220D] font-suit text-[1rem] font-semibold leading-[1.5rem] tracking-[-0.025rem]">
                       {room.tradeUserName === user?.name
                         ? room.opponentName
                         : room.tradeUserName}
                     </span>
                     <span> ・ </span>
-                    {/* 마지막 메시지 시간 적용 */}
                     <span className="text-[#545245] text-xs font-normal leading-[1.125rem] tracking-[-0.01875rem] font-suit">
                       {formatChatTime(room.updatedAt)}
                     </span>
                   </div>
                   <div>
-                    {/* 마지막 메시지 적용 */}
                     <p className="max-w-[10.625rem] truncate overflow-hidden text-ellipsis text-[#8D8974] text-[0.875rem] font-normal leading-[1.3125rem] tracking-[-0.02188rem]">
                       {room.lastMessage}
                     </p>
@@ -279,11 +66,10 @@ export default function ChatList() {
                 </div>
               </div>
               <div>
-                {/* 채팅방 삭제 아이콘 */}
                 <Image
                   onClick={(e) => {
-                    e.stopPropagation(); // ✅ 부모 클릭 이벤트 방지 (채팅방 클릭 방지)
-                    deleteChatRoom(room.tradePostId, room.chatRoomId); // ✅ 올바른 함수 호출 방식
+                    e.stopPropagation();
+                    deleteChatRoom(room.tradePostId, room.chatRoomId);
                   }}
                   className="min-w-[1.875rem]"
                   src="/icons/cancel_icon_24px.svg"

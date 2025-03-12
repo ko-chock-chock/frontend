@@ -104,7 +104,6 @@ const useJobBoardDetail = () => {
   };
 
   // ------------------------------ 찬우가 함
-  // ✅ 채팅방 생성 함수 추가 (새로 추가됨)
   const handleChat = async () => {
     const buyerId = getUserId();
     const sellerId = boardData?.writeUserId;
@@ -122,6 +121,32 @@ const useJobBoardDetail = () => {
     }
 
     try {
+      // 🔍 1️⃣ 기존 채팅방 확인 (GET 요청)
+      const existingChatResponse = await fetch(
+        `/api/trade/${postId}/chat-rooms`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (existingChatResponse.ok) {
+        const existingChatRooms = await existingChatResponse.json();
+        console.log("📩 기존 채팅방 목록:", existingChatRooms);
+
+        // 🔥 이미 생성된 채팅방이 있다면 이동
+        if (existingChatRooms.length > 0) {
+          const existingChatRoomId = existingChatRooms[0].id;
+          console.log("🔄 기존 채팅방으로 이동:", existingChatRoomId);
+          alert("이미 만들어진 채팅방 입니다!");
+          router.push(`/jobList/${postId}/${existingChatRoomId}`);
+          return;
+        }
+      }
+
       const response = await fetch(`/api/trade/${postId}/chat-rooms`, {
         method: "POST",
         headers: {
@@ -135,25 +160,20 @@ const useJobBoardDetail = () => {
       });
 
       console.log("📩 서버 응답 상태 코드:", response.status);
-
-      // ✅ 응답이 JSON인지 확인
       const contentType = response.headers.get("content-type");
       let chatRoomId: number | null = null;
 
       if (contentType && contentType.includes("application/json")) {
-        const data = await response.json(); // JSON 형식이면 파싱
-        chatRoomId = data.chatRoomId || data; // ✅ 채팅방 ID 추출 (data에 key가 있다면 사용)
+        const data = await response.json();
+        chatRoomId = data.chatRoomId || data;
       } else {
-        chatRoomId = Number(await response.text()); // ✅ 응답이 숫자 형식이라면 변환
+        chatRoomId = Number(await response.text());
       }
-
-      console.log("📩 생성된 채팅방 ID:", chatRoomId);
-
       router.push(`/jobList/${postId}/${chatRoomId}`);
+
       if (!response.ok) {
         console.error("❌ 채팅방 생성 실패:", response.status);
-        alert("이미 만들어진 채팅방 입니다.");
-        router.push(`/chatList/`);
+        alert("채팅방 생성에 실패했습니다.");
         return;
       }
     } catch (error) {

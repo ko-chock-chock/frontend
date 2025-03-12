@@ -7,13 +7,11 @@ import { CommentType, Reply } from "./type";
 
 export function useComment() {
   const params = useParams<{ boardId: string }>();
-  const postId = Number(params?.boardId); // postId를 숫자로 변환
-  const [comments, setComments] = useState<CommentType[]>([]); // ✅ useState로 상태 관리
+  const postId = Number(params?.boardId);
+  const [comments, setComments] = useState<CommentType[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = useState("");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isReplying, setIsReplying] = useState(false); // 대댓글 입력창 표시 여부
-  const replyContainerRef = useRef<HTMLDivElement>(null); // ✅ 스크롤을 위한 div 참조
+  const replyContainerRef = useRef<HTMLDivElement>(null);
   const [replyingComments, setReplyingComments] = useState<
     Record<number, boolean>
   >({});
@@ -23,7 +21,6 @@ export function useComment() {
   >({});
   const [editedText, setEditedText] = useState<Record<number, string>>({});
 
-  // ✅ 대댓글 수정 상태 추가
   const [editingReplies, setEditingReplies] = useState<Record<number, boolean>>(
     {}
   );
@@ -31,13 +28,11 @@ export function useComment() {
     Record<number, string>
   >({});
 
-  // ✅ 대댓글 수정 버튼 클릭 시 실행
   const onEditReply = (replyId: number, content: string) => {
     setEditingReplies((prev) => ({ ...prev, [replyId]: true }));
     setEditedReplyText((prev) => ({ ...prev, [replyId]: content }));
   };
 
-  // ✅ 대댓글 수정 취소 버튼 클릭 시 실행
   const onCancelEditReply = (replyId: number) => {
     setEditingReplies((prev) => ({ ...prev, [replyId]: false }));
     setEditedReplyText((prev) => ({ ...prev, [replyId]: "" }));
@@ -71,7 +66,7 @@ export function useComment() {
 
       const data = await response.json();
       console.log("✅ 가져온 댓글 데이터:", data);
-      setComments(data); // 가져온 댓글 데이터를 상태에 저장
+      setComments(data);
     } catch (error) {
       console.error("🚨 댓글 데이터 가져오기 실패:", error);
     }
@@ -96,8 +91,8 @@ export function useComment() {
       // 1️⃣ 새 대댓글을 UI에 먼저 반영하기 위해 가짜 데이터 생성
       const newReply: Reply = {
         id: Date.now(), // 일단 임시 ID 사용
-        writeUserProfileImage: user?.profileImage ?? "", // 사용자 프로필 (백엔드 응답 후 교체)
-        writeUserName: user?.name ?? "익명", // 현재 로그인한 사용자 이름
+        writeUserProfileImage: user?.profileImage ?? "",
+        writeUserName: user?.name ?? "익명",
         content: replyText,
         createdAt: new Date().toISOString(),
       };
@@ -124,18 +119,15 @@ export function useComment() {
         }
       );
 
-      // ✅ 서버 응답의 Content-Type 확인
       const contentType = response.headers.get("content-type");
 
       let result;
       if (contentType?.includes("application/json")) {
-        result = await response.json(); // ✅ JSON 응답이면 파싱
+        result = await response.json();
       } else {
-        result = await response.text(); // ✅ JSON이 아니면 일반 텍스트로 변환
+        result = await response.text();
       }
-
       console.log("✅ 대댓글 등록 성공:", result);
-
       alert("대댓글이 등록되었습니다!");
 
       // ✅ 입력창 닫기 및 초기화
@@ -154,16 +146,15 @@ export function useComment() {
     if (postId) {
       fetchComments();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
-  // 자동 높이 조절 함수
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
-    e.target.style.height = "auto"; // 높이 초기화
-    e.target.style.height = e.target.scrollHeight + "px"; // 입력 내용에 맞춰 조절
+    e.target.style.height = "auto";
+    e.target.style.height = e.target.scrollHeight + "px";
   };
 
-  // 특정 댓글의 답글창 열기
   const handleReplyClick = (commentId: number) => {
     setReplyingComments((prev) => ({
       ...prev,
@@ -171,7 +162,6 @@ export function useComment() {
     }));
   };
 
-  // 특정 댓글의 답글창 닫기
   const handleCancel = (commentId: number) => {
     setReplyingComments((prev) => ({
       ...prev,
@@ -179,26 +169,6 @@ export function useComment() {
     }));
     setText("");
   };
-
-  // ✅ isReplying이 true가 될 때 textarea에 자동 포커스 & 스크롤 이동
-  useEffect(() => {
-    if (isReplying) {
-      setTimeout(() => {
-        // ✅ textarea에 포커스
-        textareaRef.current?.focus();
-
-        // ✅ 스크롤 이동 (부드럽게)
-        if (replyContainerRef.current) {
-          replyContainerRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        } else {
-          console.warn("⚠ replyContainerRef가 없음!"); // ref가 정상적으로 참조되는지 확인
-        }
-      }, 100); // 약간의 딜레이 추가
-    }
-  }, [isReplying]);
 
   // ✅ 댓글수정 버튼 클릭 시 실행
   const onEditComment = (commentId: number, content: string) => {
@@ -268,7 +238,6 @@ export function useComment() {
       return;
     }
 
-    // ✅ 삭제 확인 (선택 사항)
     const confirmDelete = confirm("정말로 삭제하시겠습니까?");
     if (!confirmDelete) return;
 
@@ -398,7 +367,6 @@ export function useComment() {
 
       alert("✅ 대댓글이 삭제되었습니다!");
 
-      // ✅ UI 업데이트: 삭제된 대댓글 제거
       setComments((prevComments) =>
         prevComments.map((comment) =>
           comment.id === commentId

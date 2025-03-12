@@ -83,6 +83,7 @@ export default function useCommunityBoardNew() {
       const data = await response.json();
       return data;
     } catch (error) {
+      console.error("이미지 업로드 실패:", error);
       alert("이미지 업로드에 실패했습니다.");
       return [];
     }
@@ -122,6 +123,7 @@ export default function useCommunityBoardNew() {
       alert("게시글이 등록되었습니다!");
       router.push("/communityBoard");
     } catch (error) {
+      console.error("게시글 등록 오류:", error);
       alert("게시글 등록에 실패했습니다.");
     }
   };

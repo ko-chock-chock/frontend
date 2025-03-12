@@ -2,237 +2,20 @@
 import Image from "next/image";
 import Button from "@/commons/Button";
 import Input from "@/commons/input";
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useCommunityBoardEdit } from "./hook";
 
-interface EditPost {
-  title: string;
-  content: string;
-  images: string[];
-}
-
-// ✅ 기존 게시글 불러오는 API 함수
-const getPostById = async (postId: number) => {
-  try {
-    const token = localStorage.getItem("token-storage")
-      ? JSON.parse(localStorage.getItem("token-storage")!).accessToken
-      : null;
-
-    if (!token) throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
-
-    const response = await fetch(`/api/community/${postId}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) throw new Error(`게시글 조회 실패: ${response.status}`);
-
-    return await response.json();
-  } catch (error) {
-    console.error("❌ 게시글 조회 실패:", error);
-    return null;
-  }
-};
-
-// Base64 → Blob 변환 함수 추가
-const dataURLtoBlob = (dataURL: string) => {
-  const mime = dataURL.match(/^data:(.*?);base64,/)?.[1];
-  if (!mime) throw new Error("Invalid DataURL");
-
-  const byteString = atob(dataURL.split(",")[1]);
-  const byteArray = new Uint8Array(byteString.length);
-  for (let i = 0; i < byteString.length; i++) {
-    byteArray[i] = byteString.charCodeAt(i);
-  }
-
-  return new Blob([byteArray], { type: mime });
-};
-
-const uploadImages = async (files: File[]) => {
-  try {
-    console.log("📤 이미지 업로드 시작...");
-
-    const token = localStorage.getItem("token-storage")
-      ? JSON.parse(localStorage.getItem("token-storage")!).accessToken
-      : null;
-
-    if (!token) throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
-
-    const formData = new FormData();
-    files.forEach((file) => formData.append("files", file));
-
-    console.log("📸 전송할 이미지 파일:", formData.getAll("files"));
-
-    const response = await fetch(
-      "http://3.36.40.240:8001/api/uploads/multiple",
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      }
-    );
-
-    console.log("✅ 이미지 업로드 완료! 응답 상태 코드:", response.status);
-
-    if (!response.ok) throw new Error("파일 업로드 실패");
-
-    const data = await response.json();
-    console.log("✅ 서버 응답:", data);
-
-    return data; // ✅ 서버에서 받은 이미지 URL 리스트 반환
-  } catch (error) {
-    console.error("❌ 이미지 업로드 실패:", error);
-    alert("이미지 업로드에 실패했습니다.");
-    return [];
-  }
-};
-
-const CommunityBoardEdit = () => {
-  const params = useParams();
-  const boardId = Number(params?.boardId) || null;
-  console.log("📌 현재 postId:", boardId);
-
-  // ✅ 기존 데이터 상태 관리
-  const [title, setTitle] = useState("");
-  const [contents, setContents] = useState("");
-  const [images, setImages] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [post, setPost] = useState<EditPost>({
-    title: "",
-    content: "",
-    images: [],
-  });
-  const router = useRouter();
-
-  useEffect(() => {
-    console.log("🔄 현재 이미지 목록:", images);
-  }, [images]);
-
-  // ✅ 기존 게시글 데이터를 가져와서 상태에 저장
-  useEffect(() => {
-    const loadPost = async () => {
-      if (!boardId) return;
-      setLoading(true);
-
-      const fetchedPost = await getPostById(boardId);
-      if (fetchedPost) {
-        setPost(fetchedPost);
-        setTitle(fetchedPost.title);
-        setContents(fetchedPost.contents);
-        console.log("🔍 불러온 게시글 데이터:", fetchedPost);
-
-        if (fetchedPost.images && fetchedPost.images.length > 0) {
-          setImages(fetchedPost.images);
-        }
-      }
-
-      setLoading(false);
-    };
-
-    loadPost();
-  }, [boardId]);
-
-  const handleImageUpload = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      console.log("📸 파일 선택 이벤트 발생"); // ✅ 여기 로그 찍히는지 확인
-      if (e.target.files && e.target.files.length > 0) {
-        const files = Array.from(e.target.files); // ✅ 여러 개의 파일을 배열로 변환
-        console.log("📸 선택된 파일들:", files);
-
-        files.forEach((file) => {
-          const reader = new FileReader();
-
-          reader.onloadend = () => {
-            if (typeof reader.result === "string") {
-              console.log("📸 새 이미지 추가됨:", reader.result);
-              setImages((prevImages) => [
-                ...prevImages,
-                reader.result as string,
-              ]);
-            }
-          };
-
-          reader.readAsDataURL(file);
-        });
-      }
-    },
-    []
-  );
-
-  // ✅ 게시글 수정 API 함수 (컴포넌트 내부에서 상태 접근)
-  const updatePost = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("token-storage")
-        ? JSON.parse(localStorage.getItem("token-storage")!).accessToken
-        : null;
-
-      if (!token) throw new Error("토큰이 없습니다. 로그인이 필요합니다.");
-      if (!boardId) throw new Error("게시글 ID를 찾을 수 없습니다.");
-
-      // ✅ 1️⃣ 새로 추가된 Base64 이미지 추출
-      const newBase64Images = images.filter((img) =>
-        img.startsWith("data:image")
-      );
-
-      let uploadedImageUrls: string[] = [];
-
-      // ✅ 2️⃣ Base64 이미지가 있다면 업로드 API 호출
-      if (newBase64Images.length > 0) {
-        console.log("📤 새 이미지 업로드 중...");
-
-        // ✅ Base64를 Blob으로 변환 후 File 객체 생성
-        const imageFiles = newBase64Images.map((base64, index) => {
-          const blob = dataURLtoBlob(base64);
-          return new File([blob], `uploaded-image-${index}.png`, {
-            type: blob.type,
-          });
-        });
-
-        uploadedImageUrls = await uploadImages(imageFiles); // ✅ 업로드 API 호출
-        console.log("✅ 업로드된 이미지 URL:", uploadedImageUrls);
-      }
-
-      // ✅ 3️⃣ 기존 이미지 + 새로 업로드된 이미지 URL 합치기
-      const existingImageUrls = images.filter(
-        (img) => !img.startsWith("data:image")
-      );
-      const finalImageUrls = [...existingImageUrls, ...uploadedImageUrls];
-
-      console.log("✏️ 최종 수정 요청 데이터:", {
-        title,
-        contents,
-        images: finalImageUrls,
-      });
-
-      const response = await fetch(
-        `http://3.36.40.240:8001/api/community/${boardId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            title,
-            contents,
-            images: finalImageUrls, // ✅ 최종 이미지 URL 리스트 전달
-          }),
-        }
-      );
-
-      if (!response.ok) throw new Error(`게시글 수정 실패: ${response.status}`);
-
-      console.log("✅ 게시글 수정 성공");
-      alert("게시글이 수정되었습니다!");
-      router.push(`/communityBoard/${boardId}`);
-    } catch (error) {
-      console.error("❌ 게시글 수정 실패:", error);
-      alert("게시글 수정에 실패했습니다.");
-    }
-  }, [title, contents, images, boardId]); // ✅ boardId도 포함
+export default function CommunityBoardEdit() {
+  const {
+    title,
+    setTitle,
+    contents,
+    setContents,
+    images,
+    setImages,
+    handleImageUpload,
+    updatePost,
+    loading,
+  } = useCommunityBoardEdit();
 
   if (loading) {
     return <div className="text-center py-10">⏳ 게시글 불러오는 중...</div>;
@@ -326,7 +109,7 @@ const CommunityBoardEdit = () => {
             design="design1"
             width="full"
             className="h-[3.5rem]"
-            onClick={updatePost} // ✅ 수정 API 실행
+            onClick={updatePost}
           >
             수정하기
           </Button>
@@ -334,6 +117,4 @@ const CommunityBoardEdit = () => {
       </form>
     </div>
   );
-};
-
-export default CommunityBoardEdit;
+}

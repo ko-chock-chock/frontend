@@ -5,7 +5,7 @@ import Button from "@/commons/Button";
 import Input from "@/commons/input";
 import useCommunityBoardNew from "./hook";
 
-const CommunityBoardNew = () => {
+export default function CommunityBoardNew() {
   const {
     fileInputRef,
     register,
@@ -18,7 +18,7 @@ const CommunityBoardNew = () => {
     appnedImg,
     previewImages,
     onSubmit,
-  } = useCommunityBoardNew(); // ✅ 훅에서 모든 상태 & 함수 가져오기
+  } = useCommunityBoardNew();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -29,9 +29,9 @@ const CommunityBoardNew = () => {
             type="text"
             placeholder="제목을 입력해주세요"
             className="w-full"
-            value={inputValue} // ✅ 추가
+            value={inputValue}
             {...register("title", {
-              onChange: (e) => setInputValue(e.target.value), // ✅ setValue 제거하고 여기서 직접 상태 업데이트
+              onChange: (e) => setInputValue(e.target.value),
             })}
           />
 
@@ -114,6 +114,4 @@ const CommunityBoardNew = () => {
       </form>
     </div>
   );
-};
-
-export default CommunityBoardNew;
+}
