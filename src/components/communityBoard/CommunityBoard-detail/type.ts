@@ -1,14 +1,13 @@
-export interface CommunityPost {
-  bookmarkCount: number;
+export interface CommunityPostDetail {
   id: number;
   title: string;
   contents: string;
   createdAt: string;
   updatedAt: string;
   viewCount: number;
-  likeCount: number;
+  bookmarkCount: number;
   commentCount: number;
-  thumbnailImage?: string;
+  images: string[];
   writeUserId: number;
   writeUserName: string;
   writeUserProfileImage?: string;
