@@ -6,7 +6,7 @@ import { Message } from "./type";
 import { useUserStore } from "@/commons/store/userStore";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import { fetchData } from "@/utils/fetchAPI";
+import { fetchData } from "@/components/chat/ChatRoom/utils/fetchAPI";
 
 export function useChatRoom() {
   const { boardId, chatId } = useParams();
