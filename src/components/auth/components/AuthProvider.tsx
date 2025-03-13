@@ -1,6 +1,20 @@
 // src/components/auth/components/AuthProvider.tsx
 "use client";
 
+/**
+ * AuthProvider 컴포넌트
+ *
+ * 주요 기능:
+ * 1. 애플리케이션 전체의 보안 접근 제어 관리
+ * 2. 경로 기반 인증 및 권한 검증
+ * 3. 보호된 리소스 접근에 대한 권한 검증
+ * 4. 게시글 수정/조회 권한 관리
+ * 5. 채팅방 접근 권한 관리 (새로운 경로 패턴 포함)
+ * 6. 사용자 프로필 접근 제어
+ * 7. 캐싱을 통한 성능 최적화
+ * 8. 상세 보안 로깅
+ */
+
 import { usePathname, useParams, useRouter } from "next/navigation";
 import { useEffect, useCallback, useRef } from "react";
 import { TokenStorage } from "../utils/tokenUtils";
@@ -17,6 +31,9 @@ const PROTECTED_PATHS = {
   EDIT_TRADE: /^\/jobList\/\d+\/edit$/, // 구인/중고 게시글 수정
   EDIT_COMMUNITY: /^\/communityBoard\/\d+\/edit$/, // 커뮤니티 게시글 수정
   USER_PROFILE: /^\/mypage\/.*$/, // 사용자 프로필
+  CHAT_ROOM: /^\/jobList\/\d+\/\d+$/, // 채팅방 접근 패턴 추가
+  CHAT_MAP: /^\/jobList\/\d+\/\d+\/map$/, // 채팅방 지도 패턴 추가
+  CHAT_ROOM_OLD: /^\/chatList\/chatRoom$/, // 기존 채팅방 경로도 유지
 };
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5분
@@ -196,6 +213,41 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
           router.push("/");
           return false;
         }
+      }
+
+      // 채팅방 접근 권한 검사 - 새로운 경로 패턴 (/jobList/boardId/chatId)
+      if (PROTECTED_PATHS.CHAT_ROOM.test(pathname) || PROTECTED_PATHS.CHAT_MAP.test(pathname)) {
+        try {
+          // URL에서 boardId와 chatId 추출
+          const pathParts = pathname.split('/');
+          const boardId = pathParts[2];
+          const chatId = pathParts[3];
+          
+          console.log("[AuthProvider] 채팅방 접근 권한 체크:", {
+            boardId,
+            chatId,
+            userId: user?.id
+          });
+          
+          // 채팅방 권한 체크 로직은 AuthGuard에서 이미 처리하고 있으므로,
+          // 여기서는 간단하게 유효한 boardId와 chatId가 있는지만 확인
+          if (!boardId || !chatId) {
+            throw new Error("잘못된 채팅방 접근");
+          }
+          
+          // 채팅방에 대한 권한은 AuthGuard에서 자세히 처리하므로 여기서는 true 반환
+          return true;
+        } catch (error) {
+          console.error("[AuthProvider] 채팅방 접근 권한 체크 실패:", error);
+          router.push("/chatList");
+          return false;
+        }
+      }
+
+      // 기존 채팅방 경로 패턴 체크 (/chatList/chatRoom)
+      if (PROTECTED_PATHS.CHAT_ROOM_OLD.test(pathname)) {
+        console.log("[AuthProvider] 기존 채팅방 경로 접근 감지:", pathname);
+        return true; // 기존 채팅방 경로는 팀원이 담당하므로 단순히 접근 허용
       }
 
       // 사용자 프로필 페이지 권한 체크
