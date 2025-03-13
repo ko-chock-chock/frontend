@@ -2,7 +2,7 @@
 import React, { forwardRef } from "react";
 
 interface InputProps {
-  type?: "text" | "password" | "email" | "number"; // 필요한 타입 정의
+  type?: "text" | "password" | "email" | "number";
   placeholder?: string;
   value?: string;
   onChange?: React.ChangeEventHandler<HTMLInputElement>;
@@ -12,7 +12,6 @@ interface InputProps {
   id?: string; // label 연결을 위한 속성 추가
 }
 
-// ✅ forwardRef를 사용하여 ref를 올바르게 전달
 const Input = forwardRef<HTMLInputElement, InputProps>(
   (
     {
@@ -35,9 +34,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           value={value}
           onChange={onChange}
           className={`${className} flex px-4 py-4 items-center gap-2 self-stretch rounded-lg border focus:border-[rgba(27,141,90,0.93)] focus:outline-none`}
-          name={name} // name 속성 추가
-          id={id} // id 속성 추가
-          ref={ref} // ✅ ref 연결 (forwardRef 사용)
+          name={name}
+          id={id}
+          ref={ref}
         />
         {error && <span className="text-red-500 text-sm">{error}</span>}{" "}
         {/* 오류 메시지 */}

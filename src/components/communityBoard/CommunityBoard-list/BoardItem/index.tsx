@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-export default function CommunityBoardItem({ post }: { post: any }) {
+import { CommunityPost } from "@/components/communityBoard/CommunityBoard-list/type";
+
+export default function CommunityBoardItem({ post }: { post: CommunityPost }) {
   return (
     <>
       {/* Post Items */}
@@ -32,9 +34,19 @@ export default function CommunityBoardItem({ post }: { post: any }) {
               <div className="flex items-center">
                 <Image
                   className="w-full h-full"
-                  src="/icons/community_detail_bookmark_24px.svg" // 저장수
+                  src="/icons/post_list_view_icon_24px.svg"
                   alt="Cancel Icon"
                   width={0} // 크기
+                  height={0}
+                />
+                <span>{post.viewCount}</span>
+              </div>
+              <div className="flex items-center">
+                <Image
+                  className="w-full h-full"
+                  src="/icons/community_detail_bookmark_24px.svg"
+                  alt="Cancel Icon"
+                  width={0}
                   height={0}
                 />
                 <span>{post.bookmarkCount}</span>
@@ -42,22 +54,12 @@ export default function CommunityBoardItem({ post }: { post: any }) {
               <div className="flex items-center">
                 <Image
                   className="w-full h-full"
-                  src="/icons/post_list_chat_icon_24px.svg" // 댓글수
+                  src="/icons/post_list_chat_icon_24px.svg"
                   alt="Cancel Icon"
-                  width={0} // 크기
+                  width={0}
                   height={0}
                 />
                 <span>{post.commentCount}</span>
-              </div>
-              <div className="flex items-center">
-                <Image
-                  className="w-full h-full"
-                  src="/icons/post_list_view_icon_24px.svg" // 조회수
-                  alt="Cancel Icon"
-                  width={0} // 크기
-                  height={0}
-                />
-                <span>{post.viewCount}</span>
               </div>
             </div>
           </div>
@@ -65,10 +67,8 @@ export default function CommunityBoardItem({ post }: { post: any }) {
             <div
               className="w-full h-full rounded-2xl bg-center bg-cover bg-no-repeat flex-shrink-0"
               style={{
-                backgroundImage: `url(${
-                  post.thumbnailImage || "/images/default-placeholder.png"
-                })`,
-                backgroundColor: "#d3d3d3", // 썸네일이 없다면?
+                backgroundImage: `url(${post.thumbnailImage})`,
+                backgroundColor: "#d3d3d3",
               }}
             ></div>
           </div>

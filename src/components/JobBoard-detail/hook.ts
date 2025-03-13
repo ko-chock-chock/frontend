@@ -1,13 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from "react";
 import { BoardData, CheckLike } from "./types";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 const useJobBoardDetail = () => {
   const { boardId } = useParams<{ boardId: string }>();
   const [boardData, setBoardData] = useState<BoardData | null>(null);
   const [checkLike, setCheckLike] = useState(null);
   const [isLiked, setIsLiked] = useState<boolean>(false);
+  const [isOwnPost, setIsOwnPost] = useState<boolean>(false);
+  const router = useRouter();
 
   // 엑세스 토큰 가져옴
   const getAccessToken = (): string | null => {
@@ -15,6 +17,19 @@ const useJobBoardDetail = () => {
     if (!tokenStorageStr) return null;
     const tokenData = JSON.parse(tokenStorageStr);
     return tokenData?.accessToken || null;
+  };
+
+  // 현재 로그인한 사용자 ID 가져오기 (추가)
+  const getUserId = (): number | null => {
+    const userStorageStr = localStorage.getItem("user-storage");
+    if (!userStorageStr) return null;
+    try {
+      const userStorageData = JSON.parse(userStorageStr);
+      return userStorageData?.state?.user?.id || null; // ✅ user ID 가져오기
+    } catch (error) {
+      console.error("❌ 유저 ID 파싱 실패:", error);
+      return null;
+    }
   };
 
   useEffect(() => {
@@ -33,6 +48,7 @@ const useJobBoardDetail = () => {
         });
         const result = await response.json();
         setBoardData(result);
+        console.log(result);
 
         // 내가 좋아요한 게시글인지 확인
         const checkLikeResponse = await fetch(`/api/users/trade-posts/liked`, {
@@ -58,6 +74,13 @@ const useJobBoardDetail = () => {
     fetchPostData();
   }, [boardId]);
 
+  useEffect(() => {
+    const loggedInUserId = getUserId();
+    if (boardData) {
+      setIsOwnPost(boardData.writeUserId === loggedInUserId);
+    }
+  }, [boardData]);
+
   const likeButtonClickHandler = async () => {
     const token = getAccessToken();
     try {
@@ -80,10 +103,93 @@ const useJobBoardDetail = () => {
     }
   };
 
+  // ------------------------------ 찬우가 함
+  const handleChat = async () => {
+    const buyerId = getUserId();
+    const sellerId = boardData?.writeUserId;
+    const postId = boardId;
+    const token = getAccessToken();
+
+    console.log("🛠️ buyerId:", buyerId);
+    console.log("🛠️ sellerId:", sellerId);
+    console.log("🛠️ postId:", postId);
+    console.log("🛠️ token:", token);
+
+    if (!buyerId || !sellerId || !postId || !token || buyerId === sellerId) {
+      alert("유효한 요청이 아닙니다.");
+      return;
+    }
+
+    try {
+      // 🔍 1️⃣ 기존 채팅방 확인 (GET 요청)
+      const existingChatResponse = await fetch(
+        `/api/trade/${postId}/chat-rooms`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (existingChatResponse.ok) {
+        const existingChatRooms = await existingChatResponse.json();
+        console.log("📩 기존 채팅방 목록:", existingChatRooms);
+
+        // 🔥 이미 생성된 채팅방이 있다면 이동
+        if (existingChatRooms.length > 0) {
+          const existingChatRoomId = existingChatRooms[0].id;
+          console.log("🔄 기존 채팅방으로 이동:", existingChatRoomId);
+          alert("이미 만들어진 채팅방 입니다!");
+          router.push(`/jobList/${postId}/${existingChatRoomId}`);
+          return;
+        }
+      }
+
+      const response = await fetch(`/api/trade/${postId}/chat-rooms`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: "거래 채팅방",
+          tradePostId: postId,
+        }),
+      });
+
+      console.log("📩 서버 응답 상태 코드:", response.status);
+      const contentType = response.headers.get("content-type");
+      let chatRoomId: number | null = null;
+
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        chatRoomId = data.chatRoomId || data;
+      } else {
+        chatRoomId = Number(await response.text());
+      }
+      router.push(`/jobList/${postId}/${chatRoomId}`);
+
+      if (!response.ok) {
+        console.error("❌ 채팅방 생성 실패:", response.status);
+        alert("채팅방 생성에 실패했습니다.");
+        return;
+      }
+    } catch (error) {
+      console.error("🚨 API 오류:", error);
+      alert("채팅방 생성 중 오류가 발생했습니다.");
+    }
+  };
+
+  // ------------------------------
+
   return {
     likeButtonClickHandler,
     boardData,
     isLiked,
+    handleChat,
+    isOwnPost,
   };
 };
 
