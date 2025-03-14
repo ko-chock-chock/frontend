@@ -6,7 +6,7 @@ import { useUserStore } from "@/commons/store/userStore";
 import useWalkMap from "./hook";
 
 const WalkMap = () => {
-  const { isWalking, boardId, hasEnded, chatUserData, toggleWalking } =
+  const { isWalking, boardId, hasEnded, chatUserData, toggleWalking, chatId } =
     useWalkMap();
   return (
     <div className="relative w-full h-screen">
@@ -16,6 +16,7 @@ const WalkMap = () => {
           isWalking={isWalking}
           boardId={boardId}
           hasEnded={hasEnded}
+          chatId={chatId}
         />
       </div>
 
