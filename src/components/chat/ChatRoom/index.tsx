@@ -67,7 +67,7 @@ export default function ChatRoom() {
               {/* 📌 LOCATION 타입 메시지 */}
               {message.type === "LOCATION" && (
                 <div className="flex flex-col w-full">
-                  <div className="w-full min-h-[120px] flex flex-col p-2 px-5 items-start gap-4 self-stretch border-l-[2.5px] border-[#72C655]">
+                  <div className="w-full min-h-[7.5rem] flex flex-col p-2 px-5 items-start gap-4 self-stretch border-l-[2.5px] border-[#72C655]">
                     <div className="flex flex-col self-stretch text-[#26220D] font-suit text-base font-medium leading-[1.5rem] tracking-[-0.025rem]">
                       {message.message.split("\n").map((line, i) => (
                         <span key={i}>
@@ -86,6 +86,30 @@ export default function ChatRoom() {
                       />
                       위치 확인하기
                     </Button>
+                  </div>
+                  {message.createdAt && (
+                    <span className="flex items-end min-w-[3.8125rem] mt-4 mr-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">
+                      {new Date(message.createdAt).toLocaleTimeString("ko-KR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* 📌 REVIEW 타입 메시지 */}
+              {message.type === "REVIEW" && (
+                <div className="flex flex-col w-full">
+                  <div className="w-full min-h-[3.5rem] flex flex-col p-2 px-5 items-start gap-4 self-stretch border-l-[2.5px] border-[#72C655]">
+                    <div className="flex flex-col self-stretch text-[#26220D] font-suit text-base font-medium leading-[1.5rem] tracking-[-0.025rem]">
+                      {message.message.split("\n").map((line, i) => (
+                        <span key={i}>
+                          {line}
+                          <br />
+                        </span>
+                      ))}
+                    </div>
                   </div>
                   {message.createdAt && (
                     <span className="flex items-end min-w-[3.8125rem] mt-4 mr-[5px] text-[#8D8974] text-center text-sm font-medium leading-5 tracking-[-0.01875rem]">

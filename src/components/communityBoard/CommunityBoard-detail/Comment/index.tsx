@@ -70,7 +70,7 @@ export default function Comment() {
                         </div>
 
                         {user?.name === comment.writeUserName && (
-                          <div className="flex space-x-6 text-sm text-gray-600">
+                          <div className="flex space-x-4 text-sm text-gray-600">
                             <>
                               <span
                                 className="cursor-pointer text-green-600"
@@ -172,14 +172,14 @@ export default function Comment() {
                     </div>
                   )}
 
-                  <div className="flex flex-col gap-4 ml-16 space-y-3">
+                  <div className="flex flex-col gap-4 ml-6 space-y-3">
                     {comment.replies?.map((reply) => (
                       <div
                         key={reply.id}
                         className="flex items-start space-x-3"
                       >
                         <div
-                          className="w-12 h-12 rounded-3xl bg-center bg-cover bg-no-repeat bg-[#d3d3d3] flex-shrink-0"
+                          className="w-8 h-8 rounded-3xl bg-center bg-cover bg-no-repeat bg-[#d3d3d3] flex-shrink-0"
                           style={{
                             backgroundImage: `url(${reply.writeUserProfileImage})`,
                           }}
@@ -188,7 +188,7 @@ export default function Comment() {
                         <div className="flex-1">
                           <div className="flex items-center justify-between w-full">
                             <div className="flex items-center space-x-2">
-                              <span className="font-semibold">
+                              <span className="font-semibold text-sm">
                                 {reply.writeUserName}
                               </span>
                               <span className="text-gray-500 text-sm">
@@ -204,10 +204,10 @@ export default function Comment() {
                             </div>
 
                             {user?.name === reply.writeUserName && (
-                              <div className="flex space-x-6 text-sm text-gray-600">
+                              <div className="flex space-x-4 text-sm text-gray-600 ">
                                 <>
                                   <span
-                                    className="cursor-pointer text-green-600"
+                                    className="cursor-pointer text-green-600 "
                                     onClick={() =>
                                       onEditReply(reply.id, reply.content)
                                     }
@@ -268,7 +268,9 @@ export default function Comment() {
                               </div>
                             </div>
                           ) : (
-                            <p className="text-gray-700">{reply.content}</p>
+                            <p className="text-gray-700 text-sm">
+                              {reply.content}
+                            </p>
                           )}
                         </div>
                       </div>
