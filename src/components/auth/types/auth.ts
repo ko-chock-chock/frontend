@@ -59,17 +59,25 @@ export interface SecurityEventDetails {
 }
 
 /**
+ * 확장된 리소스 인터페이스 정의
+ * 채팅방과 지도 페이지 접근 권한 검사 개선
+ */
+export interface ResourceInfo {
+  userId?: number;
+  boardId?: string;
+  chatId?: string;      // 채팅방 ID 추가
+  path?: string;        // 현재 경로 정보 추가
+  type?: "trade" | "community" | "chat";
+  writeUserId?: number;
+  requestUserId?: number;
+}
+
+/**
  * AuthGuard 관련 타입
  */
 export interface AuthGuardProps {
   children: ReactNode;
-  resource?: {
-    userId?: number;
-    boardId?: string;
-    type?: "trade" | "community" | "chat";
-    writeUserId?: number;
-    requestUserId?: number;
-  };
+  resource?: ResourceInfo;   // ResourceInfo 타입으로 변경
   requireAuth?: boolean;
   fallback?: ReactNode;
   redirectTo?: string;
