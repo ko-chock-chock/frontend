@@ -4,6 +4,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChatUserDataType } from "./type";
 
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
+
 const useWalkMap = () => {
   const [isWalking, setIsWalking] = useState<boolean>(false); // 산책 상태 관리
   const [hasEnded, setHasEnded] = useState<boolean>(false); // 산책 종료 여부 (종료 후 재시작 불가)
@@ -15,6 +18,10 @@ const useWalkMap = () => {
   const [chatUserData, setChatUserData] = useState<ChatUserDataType | null>(
     null
   );
+
+  // WebSocket 연결 상태를 유지하는 전역 참조
+  const stompClientRef = useRef<Client | null>(null);
+
   const router = useRouter();
 
   // 엑세스 토큰 가져옴
@@ -27,6 +34,26 @@ const useWalkMap = () => {
 
   // 로그인 유저정보
   const loggedInUserId = useUserStore((state) => state.user?.id);
+
+  // ✅ WebSocket 연결 설정
+  useEffect(() => {
+    const socket = new SockJS("http://3.36.40.240:8001/ws");
+    const stompClient = new Client({
+      webSocketFactory: () => socket,
+      reconnectDelay: 5000, // 5초마다 자동 재연결
+      onConnect: () => console.log("✅ WebSocket 연결 성공!"),
+      onStompError: (frame) => console.error("🚨 STOMP 오류 발생:", frame),
+    });
+
+    stompClient.activate();
+    stompClientRef.current = stompClient;
+
+    return () => {
+      if (stompClientRef.current) {
+        stompClientRef.current.deactivate();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const checkParticipant = async () => {
@@ -69,6 +96,29 @@ const useWalkMap = () => {
       timerRef.current = null;
       setIsWalking(false);
       setHasEnded(true);
+
+      // ✅ WebSocket으로 메시지 전송
+      if (stompClientRef.current && stompClientRef.current.connected) {
+        const reviewMessage = {
+          chatRoomId: Number(chatId),
+          type: "REVIEW",
+          message: "산책이 종료되었습니다. 🐾\n오늘 산책은 어땠나요?",
+          createdAt: new Date().toISOString(),
+          writeUserId: loggedInUserId,
+        };
+
+        stompClientRef.current.publish({
+          destination: "/app/chat/send",
+          body: JSON.stringify(reviewMessage),
+        });
+
+        console.log("✅ 산책 종료 메시지 전송 성공!");
+      } else {
+        console.error("🚨 WebSocket 연결 안됨! 메시지 전송 실패");
+      }
+
+      // ✅ 채팅방으로 이동
+      router.push(`/jobList/${boardId}/${chatId}`);
     } else {
       setIsWalking(true);
     }

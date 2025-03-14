@@ -16,7 +16,7 @@ export function useChatRoom() {
   const inputRef = useRef<HTMLInputElement>(null); // 입력 필드 DOM에 접근하기 위한 ref
   const messagesEndRef = useRef<HTMLDivElement>(null); // 채팅 메시지 목록의 끝을 참조하는 ref
   const router = useRouter(); // useRouter 훅 사용
-  const roomId = chatId; // ✅ URL에서 roomId 가져오기
+  const roomId = chatId; //
   const postId = boardId; // 해당 게시물의 ID
   const user = useUserStore((state) => state.user) ?? {
     name: "",
