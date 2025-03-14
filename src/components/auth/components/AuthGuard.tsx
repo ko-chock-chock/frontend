@@ -5,18 +5,40 @@
  *
  * 주요 기능:
  * 1. 애플리케이션 전체 페이지의 통합 보안 접근 제어
+ *    - 인증 상태에 따른 페이지 접근 관리
+ *    - 미인증 사용자 리다이렉트 처리
+ *
  * 2. 사용자 인증 및 권한 실시간 검증 메커니즘
+ *    - JWT 토큰 기반 인증 검증
+ *    - 사용자 상태와 권한 실시간 모니터링
+ *
  * 3. 리소스 유형별 세분화된 접근 권한 관리
  *    - 게시글 수정/조회 권한
  *    - 채팅방 접근 권한
  *    - 프로필 접근 권한
+ *    - 지도 페이지 접근 권한
  * 4. 보안 취약점 방어 및 비정상적 접근 추적
+ *
+ * 지도 접근 권한 세부 기능:
+ * - 특정 게시물의 채팅방 참여자만 지도 페이지 접근 허용
+ * - 개발 환경에서 테스트 모드를 통한 유연한 접근 관리
+ * - 사용자 역할(게시물 작성자/채팅 참여자) 기반 권한 검증
+ * - 비인가 접근 시 자동 리다이렉트 및 보안 로깅
  *
  * 보안 핵심 전략:
  * - JWT 토큰 기반 인증
  * - 사용자 역할 및 권한의 다층적 검증
  * - 민감한 리소스에 대한 엄격한 접근 제한
  * - 비인가 접근 시도에 대한 comprehensive 로깅
+ *
+ * 사용 예시:
+ * - 기본 인증 보호: <AuthGuard>컴포넌트</AuthGuard>
+ * - 채팅방 보호: <AuthGuard resource={{ type: "chat", boardId: 123 }}>컴포넌트</AuthGuard>
+ * - 게시글 수정 보호: <AuthGuard resource={{ type: "trade", boardId: 123 }}>컴포넌트</AuthGuard>
+ * - 인증 불필요 페이지: <AuthGuard requireAuth={false}>컴포넌트</AuthGuard>
+ *
+ * @version 1.0.0
+ * @since 2024.02
  */
 
 import { useEffect, useState } from "react";
@@ -63,7 +85,14 @@ declare global {
  * 현재는 콘솔에만 로깅하도록 구현
  *
  * @param eventType - 발생한 보안 이벤트의 유형
+ *   - "UNAUTHORIZED_CHAT_ACCESS": 권한 없는 채팅방 접근 시도
+ *   - "UNAUTHORIZED_MAP_ACCESS": 권한 없는 지도 페이지 접근 시도
+ *   - "UNAUTHORIZED_EDIT_ACCESS": 권한 없는 게시글 수정 시도
+ *   - "AUTH_ERROR": 인증 과정 중 발생한 에러
  * @param details - 이벤트와 관련된 상세 정보
+ *   - userId: 사용자 ID
+ *   - attemptedBoardId: 접근 시도한 게시글 ID
+ *   - timestamp: 이벤트 발생 시간
  */
 const logSecurityEvent = (eventType: string, details: SecurityEventDetails) => {
   // 기본 로그 데이터 구성
@@ -118,7 +147,6 @@ export const AuthGuard = ({
           }
           return;
         }
-
         // 3. 채팅방 전용 권한 체크 메커니즘
         if (resource?.type === "chat" && resource?.boardId) {
           try {
@@ -135,6 +163,7 @@ export const AuthGuard = ({
               });
 
               // 사용자 정보 로딩 대기 (최대 3초)
+              // 200ms 간격으로 최대 15번(3초) 재시도
               let attempts = 0;
               const maxAttempts = 15; // 200ms * 15 = 3초
 
@@ -208,6 +237,7 @@ export const AuthGuard = ({
             });
 
             // 지도 페이지 접근 권한 체크
+            // 경로에 '/map'이 포함되어 있는지 확인
             const isMapPath = resourceWithPath.path
               ? resourceWithPath.path.includes("/map")
               : false;
@@ -235,7 +265,7 @@ export const AuthGuard = ({
               }
 
               // 사용자 정보 유효성 재확인
-              // 에러 처리 방식 개선
+              // 개선된 코드
               if (!user || user.id === undefined) {
                 console.log("[AuthGuard] 사용자 정보 부족으로 권한 체크 지연");
                 // 에러를 던지는 대신 기다리기
@@ -243,6 +273,7 @@ export const AuthGuard = ({
               }
 
               // 채팅방 정보 조회 API 호출
+              // 채팅방 목록을 가져와서 현재 사용자가 채팅방 참여자인지 확인
               const response = await fetch(
                 `/api/trade/${resourceWithPath.boardId}/chat-rooms`,
                 {
@@ -263,6 +294,7 @@ export const AuthGuard = ({
               const userId = user?.id;
 
               // 채팅방 접근 권한 검사
+              // 사용자가 채팅방의 작성자(writeUserId) 또는 요청자(requestUserId)인지 확인
               const isAuthorizedUser =
                 userId &&
                 chatRooms.some(
@@ -340,6 +372,7 @@ export const AuthGuard = ({
             const chatRooms = await response.json();
 
             // 채팅방 접근 권한 검사
+            // 사용자가 채팅방의 작성자(writeUserId) 또는 요청자(requestUserId)인지 확인
             const isAuthorizedUser = chatRooms.some(
               (room: ChatRoom) =>
                 room.writeUserId === user?.id || room.requestUserId === user?.id
@@ -425,8 +458,8 @@ export const AuthGuard = ({
             return;
           }
         }
-
         // 4. 게시글 수정/조회 권한 체크 메커니즘
+        // 게시글 유형(trade/community)에 따른 권한 체크
         if (
           resource?.boardId &&
           (resource?.type === "trade" || resource?.type === "community")
@@ -443,6 +476,7 @@ export const AuthGuard = ({
             }
 
             // API 경로 동적 결정
+            // trade는 구인/중고 게시글, community는 커뮤니티 게시글
             let apiPath = "";
             let redirectPath = "";
 
@@ -485,6 +519,7 @@ export const AuthGuard = ({
             });
 
             // 게시글 작성자 권한 최종 검증
+            // 게시글 수정은 작성자만 가능
             if (!responseData || user?.id !== responseData.writeUserId) {
               console.log("[AuthGuard] 게시글 수정 권한 없음");
               if (isMounted) {
@@ -520,6 +555,7 @@ export const AuthGuard = ({
         }
 
         // 5. 기본 리소스 권한 체크
+        // 사용자별 고유 리소스(예: 프로필, 활동 내역 등) 접근 권한 체크
         if (resource && resource.userId) {
           const hasResourceAccess = user?.id === Number(resource.userId);
           console.log("[AuthGuard] 리소스 접근 권한 체크:", {
@@ -542,6 +578,7 @@ export const AuthGuard = ({
         }
 
         // 6. 모든 검증 조건 통과
+        // 인증 및 권한 검증을 모두 통과한 경우
         if (isMounted) {
           setIsAuthorized(true);
           setIsLoading(false);
@@ -565,6 +602,7 @@ export const AuthGuard = ({
   }, [requireAuth, redirectTo, resource, router, user, pathname, fallback]);
 
   // 테스트 모드 활성화/비활성화 함수 (개발 도구에서 사용)
+  // 개발 환경에서만 테스트 모드 함수 정의
   if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
     window.enableMapTestMode = () => {
       localStorage.setItem("mapTestMode", "true");
