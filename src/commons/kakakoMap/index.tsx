@@ -27,6 +27,7 @@ interface KakaoMapComponentProps {
   isWalking: boolean;
   boardId: string;
   hasEnded: boolean;
+  chatId: string;
 }
 
 declare global {
@@ -39,8 +40,8 @@ const KakaoMapComponent: React.FC<KakaoMapComponentProps> = ({
   isWalking,
   boardId,
   hasEnded,
+  chatId,
 }) => {
-  const chatRoomId = 3;
   const [boardData, setBoardData] = useState<IBoardData | null>(null);
   const [locationData, setLocationData] = useState<ILocation[]>([]);
   const [userLocation, setUserLocation] = useState<ILocation | null>(null);
@@ -169,20 +170,17 @@ const KakaoMapComponent: React.FC<KakaoMapComponentProps> = ({
                 updatePolyline(updated);
                 return updated;
               });
-              fetch(
-                `/api/trade/${boardId}/chat-rooms/${chatRoomId}/locations`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${getAccessToken()}`,
-                  },
-                  body: JSON.stringify({
-                    latitude: String(latitude),
-                    longitude: String(longitude),
-                  }),
-                }
-              )
+              fetch(`/api/trade/${boardId}/chat-rooms/${chatId}/locations`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${getAccessToken()}`,
+                },
+                body: JSON.stringify({
+                  latitude: String(latitude),
+                  longitude: String(longitude),
+                }),
+              })
                 .then((response) => {
                   if (!response.ok)
                     throw new Error(`HTTP error! Status: ${response.status}`);
@@ -203,7 +201,7 @@ const KakaoMapComponent: React.FC<KakaoMapComponentProps> = ({
     } else {
       // 게시글 작성자: GET 폴링 진행 (hasEnded가 false인 경우에만)
       const getLocations = () => {
-        fetch(`/api/trade/${boardId}/chat-rooms/${chatRoomId}/locations`, {
+        fetch(`/api/trade/${boardId}/chat-rooms/${chatId}/locations`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -232,7 +230,7 @@ const KakaoMapComponent: React.FC<KakaoMapComponentProps> = ({
     return () => {
       if (apiIntervalRef.current) clearInterval(apiIntervalRef.current);
     };
-  }, [boardData, loggedInUserId, boardId, chatRoomId, isWalking, hasEnded]);
+  }, [boardData, loggedInUserId, boardId, chatId, isWalking, hasEnded]);
 
   const updatePolyline = (locations: ILocation[]) => {
     if (!kakaoMapRef.current || locations.length === 0) return;
