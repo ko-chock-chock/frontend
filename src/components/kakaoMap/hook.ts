@@ -135,6 +135,7 @@ const useWalkMap = () => {
     hasEnded,
     chatUserData,
     toggleWalking,
+    chatId,
   };
 };
 
